@@ -1,34 +1,34 @@
 /* ===== Reset & Base ===== */
 
 * {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 body {
+  background: #1a1a2e;
+  color: #e0e0e0;
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 13px;
-  color: #e0e0e0;
-  background: #1a1a2e;
   padding: 20px;
 }
 
 /* ===== Header ===== */
 
 header {
+  align-items: baseline;
+  border-bottom: 1px solid #333;
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
   margin-bottom: 12px;
-  border-bottom: 1px solid #333;
   padding-bottom: 8px;
 }
 
 h1 {
+  color: #ccc;
   font-size: 15px;
   font-weight: 600;
-  color: #ccc;
 }
 
 .count {
@@ -47,20 +47,20 @@ h1 {
 }
 
 .header-right {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: 8px;
 }
 
 .refresh {
   background: none;
+  border-radius: 3px;
   border: 1px solid #444;
   color: #aaa;
-  padding: 4px 12px;
-  border-radius: 3px;
   cursor: pointer;
   font-family: inherit;
   font-size: 12px;
+  padding: 4px 12px;
 }
 
 .refresh:hover {
@@ -71,21 +71,21 @@ h1 {
 /* ===== Table ===== */
 
 table {
-  width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  width: 100%;
 }
 
 th {
-  text-align: left;
+  border-bottom: 1px solid #333;
   color: #777;
-  font-weight: 500;
+  cursor: pointer;
   font-size: 11px;
-  text-transform: uppercase;
+  font-weight: 500;
   letter-spacing: 0.5px;
   padding: 4px 8px;
-  border-bottom: 1px solid #333;
-  cursor: pointer;
+  text-align: left;
+  text-transform: uppercase;
   user-select: none;
 }
 
@@ -99,11 +99,11 @@ th .arrow {
 }
 
 td {
-  padding: 5px 8px;
   border-bottom: 1px solid #222;
-  white-space: nowrap;
   overflow: hidden;
+  padding: 5px 8px;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 tr:hover td {
@@ -117,9 +117,9 @@ tr:hover td {
 }
 
 .email-text {
+  border-radius: 4px;
   cursor: pointer;
   padding: 2px 6px;
-  border-radius: 4px;
   transition: background 0.15s;
 }
 
@@ -147,12 +147,12 @@ tr:hover td {
 /* ===== Loading Indicator ===== */
 
 .loading {
-  display: flex;
   align-items: center;
+  color: #888;
+  display: flex;
+  gap: 10px;
   justify-content: center;
   padding: 40px;
-  color: #888;
-  gap: 10px;
 }
 
 .loading .dots span {
@@ -186,10 +186,10 @@ tr.new {
 /* ===== Toggle Switch ===== */
 
 .toggle {
-  display: inline-flex;
   align-items: center;
-  gap: 6px;
   cursor: pointer;
+  display: inline-flex;
+  gap: 6px;
   user-select: none;
 }
 
@@ -198,25 +198,25 @@ tr.new {
 }
 
 .toggle .slider {
-  position: relative;
-  width: 32px;
-  height: 18px;
   background: #f06060;
   border-radius: 9px;
-  transition: background 0.2s;
   flex-shrink: 0;
+  height: 18px;
+  position: relative;
+  transition: background 0.2s;
+  width: 32px;
 }
 
 .toggle .slider::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
   background: #fff;
   border-radius: 50%;
+  content: "";
+  height: 14px;
+  left: 2px;
+  position: absolute;
+  top: 2px;
   transition: transform 0.2s;
+  width: 14px;
 }
 
 .toggle input:checked + .slider {
@@ -248,10 +248,10 @@ tr.new {
 /* ===== Inline Note Editing ===== */
 
 td.note {
+  color: #999;
+  max-width: 300px;
   position: relative;
   white-space: normal;
-  max-width: 300px;
-  color: #999;
 }
 
 td.note-disabled {
@@ -262,8 +262,8 @@ td.note-disabled {
 .note-text {
   cursor: pointer;
   display: inline-block;
-  min-width: 20px;
   min-height: 1em;
+  min-width: 20px;
 }
 
 .note-text:hover {
@@ -271,27 +271,27 @@ td.note-disabled {
 }
 
 .note-edit {
-  display: inline-flex;
   align-items: center;
+  display: inline-flex;
   gap: 4px;
   width: 100%;
 }
 
 .note-input {
   background: #2a2a3e;
+  border-radius: 3px;
   border: 1px solid #555;
   color: #e0e0e0;
+  flex: 1;
   font-family: inherit;
   font-size: 13px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  flex: 1;
   min-width: 0;
+  padding: 2px 6px;
 }
 
 .note-input:focus {
-  outline: none;
   border-color: #7fbbf0;
+  outline: none;
 }
 
 .note-btn {
@@ -299,8 +299,8 @@ td.note-disabled {
   border: none;
   cursor: pointer;
   font-size: 14px;
-  padding: 2px 4px;
   line-height: 1;
+  padding: 2px 4px;
 }
 
 .save-btn {
@@ -324,11 +324,11 @@ td.note-disabled {
 .pin-btn {
   background: none;
   border: none;
-  cursor: pointer;
   color: #777;
+  cursor: pointer;
+  line-height: 1;
   padding: 0 4px 0 0;
   vertical-align: middle;
-  line-height: 1;
 }
 
 .pin-btn:hover {
@@ -353,10 +353,10 @@ td.note-disabled {
 .delete-btn {
   background: none;
   border: none;
-  cursor: pointer;
   color: #666;
-  padding: 2px;
+  cursor: pointer;
   line-height: 1;
+  padding: 2px;
   vertical-align: middle;
 }
 
@@ -376,11 +376,11 @@ td.note-disabled {
 }
 
 .pinned-section h2 {
+  color: #999;
   font-size: 12px;
   font-weight: 500;
-  color: #999;
-  margin-bottom: 4px;
   letter-spacing: 0.5px;
+  margin-bottom: 4px;
   text-transform: uppercase;
 }
 
@@ -405,19 +405,19 @@ td.note-disabled {
 }
 
 #search-input {
-  width: 100%;
   background: #2a2a3e;
+  border-radius: 4px;
   border: 1px solid #444;
   color: #e0e0e0;
   font-family: inherit;
   font-size: 13px;
   padding: 6px 10px;
-  border-radius: 4px;
+  width: 100%;
 }
 
 #search-input:focus {
-  outline: none;
   border-color: #7fbbf0;
+  outline: none;
 }
 
 #search-input::placeholder {
@@ -427,25 +427,25 @@ td.note-disabled {
 /* ===== Create Alias Bar ===== */
 
 .create-bar {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: 6px;
 }
 
 .create-input {
   background: #2a2a3e;
+  border-radius: 3px;
   border: 1px solid #444;
   color: #e0e0e0;
   font-family: inherit;
   font-size: 13px;
   padding: 4px 8px;
-  border-radius: 3px;
   width: 180px;
 }
 
 .create-input:focus {
-  outline: none;
   border-color: #7fbbf0;
+  outline: none;
 }
 
 .create-input::placeholder {
@@ -459,39 +459,39 @@ td.note-disabled {
 
 .create-select {
   background: #2a2a3e;
+  border-radius: 3px;
   border: 1px solid #444;
   color: #e0e0e0;
   font-family: inherit;
   font-size: 12px;
   padding: 4px 6px;
-  border-radius: 3px;
 }
 
 .create-select:focus {
-  outline: none;
   border-color: #7fbbf0;
+  outline: none;
 }
 
 .create-random-label {
-  color: #aaa;
-  font-size: 12px;
-  display: flex;
   align-items: center;
-  gap: 4px;
+  color: #aaa;
   cursor: pointer;
+  display: flex;
+  font-size: 12px;
+  gap: 4px;
   user-select: none;
   white-space: nowrap;
 }
 
 .create-btn {
   background: #2a4a2a;
+  border-radius: 3px;
   border: 1px solid #4a6a4a;
   color: #8f8;
-  padding: 4px 12px;
-  border-radius: 3px;
   cursor: pointer;
   font-family: inherit;
   font-size: 12px;
+  padding: 4px 12px;
   white-space: nowrap;
 }
 
@@ -508,36 +508,36 @@ td.note-disabled {
 /* ===== Toast Notifications ===== */
 
 .toast-container {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 8px;
+  left: 50%;
   pointer-events: none;
+  position: fixed;
+  top: 20px;
+  transform: translateX(-50%);
+  z-index: 9999;
 }
 
 .toast {
-  pointer-events: auto;
+  animation: toastIn 0.25s ease forwards;
+  background: #2a2a3e;
+  border-radius: 6px;
+  border: 1px solid #444;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  color: #e0e0e0;
   font-family: inherit;
   font-size: 13px;
-  padding: 8px 18px;
-  border-radius: 6px;
-  color: #e0e0e0;
-  border: 1px solid #444;
-  background: #2a2a3e;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  opacity: 0;
-  transform: translateY(-12px);
-  animation: toastIn 0.25s ease forwards;
   max-width: 500px;
-  text-align: center;
-  white-space: nowrap;
+  opacity: 0;
   overflow: hidden;
+  padding: 8px 18px;
+  pointer-events: auto;
+  text-align: center;
   text-overflow: ellipsis;
+  transform: translateY(-12px);
+  white-space: nowrap;
 }
 
 .toast.toast-error {

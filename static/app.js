@@ -1,68 +1,78 @@
 /* ===== Timezone Detection ===== */
 
-var localTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
-var tzAbbr = new Date()
+/** @type {string} */
+const localTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+/** @type {string} */
+const tzAbbr = new Date()
   .toLocaleTimeString("en-US", { timeZoneName: "short" })
   .split(" ")
   .pop();
 
-document.querySelectorAll("th[data-col='3']").forEach(function (th) {
-  th.childNodes[0].textContent = "Last Activity (" + tzAbbr + ")";
-});
+for (const th of document.querySelectorAll("th[data-col='3']")) {
+  th.childNodes[0].textContent = `Last Activity (${tzAbbr})`;
+}
 
-document.querySelectorAll("th[data-col='4']").forEach(function (th) {
-  th.childNodes[0].textContent = "Created (" + tzAbbr + ")";
-});
+for (const th of document.querySelectorAll("th[data-col='4']")) {
+  th.childNodes[0].textContent = `Created (${tzAbbr})`;
+}
 
 /* ===== Timestamp Localization ===== */
 
+/**
+ * Converts UTC timestamps in `data-ts` attributes to local time strings.
+ * @param {Element} container - Parent element containing `td.ts[data-ts]` cells
+ */
 function localizeTimestamps(container) {
-  container.querySelectorAll("td.ts[data-ts]").forEach(function (td) {
-    var ts = td.getAttribute("data-ts");
-    if (!ts || td.getAttribute("data-localized")) return;
+  for (const td of container.querySelectorAll("td.ts[data-ts]")) {
+    const ts = td.getAttribute("data-ts");
+    if (!ts || td.getAttribute("data-localized")) continue;
 
-    var d = new Date(parseInt(ts) * 1000);
-    var y = d.getFullYear();
-    var mo = String(d.getMonth() + 1).padStart(2, "0");
-    var da = String(d.getDate()).padStart(2, "0");
-    var h = String(d.getHours()).padStart(2, "0");
-    var mi = String(d.getMinutes()).padStart(2, "0");
+    const d = new Date(parseInt(ts, 10) * 1000);
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
 
-    td.textContent = y + "-" + mo + "-" + da + " " + h + ":" + mi;
+    td.textContent = `${y}-${mo}-${da} ${h}:${mi}`;
     td.setAttribute("data-localized", "1");
-  });
+  }
 }
 
 /* ===== Toast Notifications ===== */
 
-function showToast(text, type, timeout) {
-  type = type || "info";
-  timeout = timeout || 3500;
-
-  var container = document.getElementById("toast-container");
-  var el = document.createElement("div");
-  el.className = "toast toast-" + type;
+/**
+ * Displays a temporary toast notification.
+ * @param {string} text - Message to display
+ * @param {"info" | "error" | "success"} [type="info"] - Visual style
+ * @param {number} [timeout=3500] - Duration in ms before fade-out
+ */
+function showToast(text, type = "info", timeout = 3500) {
+  const container = document.getElementById("toast-container");
+  const el = document.createElement("div");
+  el.className = `toast toast-${type}`;
   el.textContent = text;
   container.appendChild(el);
 
-  setTimeout(function () {
+  setTimeout(() => {
     el.classList.add("toast-out");
-    el.addEventListener("animationend", function () {
-      el.remove();
-    });
+    el.addEventListener("animationend", () => el.remove());
   }, timeout);
 }
 
 /* ===== SSE Streaming ===== */
 
+/**
+ * Opens an SSE connection to `/aliases/stream` and populates the alias tables.
+ */
 function startStream() {
-  var body = document.getElementById("alias-body");
-  var pinnedBody = document.getElementById("pinned-body");
-  var pinnedSection = document.getElementById("pinned-section");
+  const body = document.getElementById("alias-body");
+  const pinnedBody = document.getElementById("pinned-body");
+  const pinnedSection = document.getElementById("pinned-section");
 
   showToast("Refreshing aliases…", "info", 2000);
 
-  // Only show loader if table is empty
   if (!body.children.length || body.querySelector("#loader")) {
     body.innerHTML =
       '<tr id="loader"><td colspan="6"><div class="loading">' +
@@ -74,71 +84,61 @@ function startStream() {
   pinnedBody.innerHTML = "";
   pinnedSection.classList.add("hidden");
 
-  var source = new EventSource("/aliases/stream");
-  var first = true;
-  var gotData = false;
-  var prevBody = body.innerHTML;
+  const source = new EventSource("/aliases/stream");
+  let isFirstPage = true;
+  let gotData = false;
+  const prevBody = body.innerHTML;
 
-  source.addEventListener("pinned", function (e) {
+  source.addEventListener("pinned", (e) => {
     gotData = true;
     pinnedBody.insertAdjacentHTML("beforeend", e.data);
     localizeTimestamps(pinnedBody);
     pinnedSection.classList.remove("hidden");
   });
 
-  source.addEventListener("page", function (e) {
+  source.addEventListener("page", (e) => {
     gotData = true;
-    if (first) {
+    if (isFirstPage) {
       body.innerHTML = "";
-      first = false;
+      isFirstPage = false;
     }
     body.insertAdjacentHTML("beforeend", e.data);
     localizeTimestamps(body);
   });
 
-  source.addEventListener("ratelimit", function (e) {
+  source.addEventListener("ratelimit", (e) => {
     showToast(
-      "Rate limited: waiting " + parseFloat(e.data).toFixed(1) + "s",
+      `Rate limited: waiting ${parseFloat(e.data).toFixed(1)}s`,
       "info",
       4000
     );
   });
 
-  source.addEventListener("done", function (e) {
-    document.querySelector(".count").textContent = "(" + e.data + " aliases)";
+  source.addEventListener("done", (e) => {
+    document.querySelector(".count").textContent = `(${e.data} aliases)`;
     source.close();
 
-    // Enable all toggle switches now that loading is complete
-    document.querySelectorAll(".toggle.disabled").forEach(function (el) {
+    // Enable interactive controls now that loading is complete
+    for (const el of document.querySelectorAll(".toggle.disabled")) {
       el.classList.remove("disabled");
-    });
-
-    // Enable inline editing on all note cells
-    document.querySelectorAll("td.note-disabled").forEach(function (el) {
+    }
+    for (const el of document.querySelectorAll("td.note-disabled")) {
       el.classList.remove("note-disabled");
-    });
-
-    // Enable pin buttons
-    document.querySelectorAll(".pin-btn.pin-disabled").forEach(function (el) {
+    }
+    for (const el of document.querySelectorAll(".pin-btn.pin-disabled")) {
       el.classList.remove("pin-disabled");
-    });
+    }
+    for (const el of document.querySelectorAll(".delete-btn.pin-disabled")) {
+      el.classList.remove("pin-disabled");
+    }
 
-    // Enable delete buttons
-    document
-      .querySelectorAll(".delete-btn.pin-disabled")
-      .forEach(function (el) {
-        el.classList.remove("pin-disabled");
-      });
-
-    // Reset fuzzy search state
     document.getElementById("search-input").value = "";
     fuseInstance = null;
 
-    // Fetch alias creation options
     loadAliasOptions();
   });
 
-  source.onerror = function () {
+  source.onerror = () => {
     source.close();
     if (!gotData) {
       body.innerHTML = prevBody;
@@ -149,88 +149,94 @@ function startStream() {
 
 /* ===== Clipboard ===== */
 
+/**
+ * Copies an element's text to the clipboard with a brief "copied" animation.
+ * @param {HTMLElement} el - Element whose `textContent` will be copied
+ */
 function copyEmail(el) {
   navigator.clipboard.writeText(el.textContent.trim());
   el.classList.add("copied");
-  setTimeout(function () {
-    el.classList.remove("copied");
-  }, 400);
+  setTimeout(() => el.classList.remove("copied"), 400);
 }
 
 /* ===== Alias Toggle ===== */
 
-function toggleAlias(el, aliasId) {
+/**
+ * Toggles an alias on/off via the API.
+ * @param {HTMLElement} el - The `.toggle` label element
+ * @param {number} aliasId - SimpleLogin alias ID
+ */
+async function toggleAlias(el, aliasId) {
   if (el.classList.contains("disabled")) return;
   el.classList.add("disabled");
 
-  var checkbox = el.querySelector("input");
-  var label = el.querySelector(".toggle-label");
-  var wasChecked = checkbox.checked;
+  const checkbox = /** @type {HTMLInputElement} */ (el.querySelector("input"));
+  const label = el.querySelector(".toggle-label");
+  const wasChecked = checkbox.checked;
 
-  fetch("/api/toggle/" + aliasId, { method: "POST" })
-    .then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    })
-    .then(function (data) {
-      if (data.error) throw new Error(data.error);
-      checkbox.checked = data.enabled;
-      label.textContent = data.enabled ? "on" : "off";
-    })
-    .catch(function () {
-      checkbox.checked = wasChecked;
-      label.textContent = wasChecked ? "on" : "off";
-      showToast("Failed to toggle alias: server error", "error");
-    })
-    .finally(function () {
-      el.classList.remove("disabled");
-    });
+  try {
+    const resp = await fetch(`/api/toggle/${aliasId}`, { method: "POST" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    checkbox.checked = data.enabled;
+    label.textContent = data.enabled ? "on" : "off";
+  } catch {
+    checkbox.checked = wasChecked;
+    label.textContent = wasChecked ? "on" : "off";
+    showToast("Failed to toggle alias: server error", "error");
+  } finally {
+    el.classList.remove("disabled");
+  }
 }
 
 /* ===== Alias Deletion ===== */
 
-function deleteAlias(btn, aliasId) {
-  var row = btn.closest("tr");
-  var email = row.querySelector(".email-text");
+/**
+ * Deletes an alias after user confirmation.
+ * @param {HTMLButtonElement} btn - The delete button
+ * @param {number} aliasId - SimpleLogin alias ID
+ */
+async function deleteAlias(btn, aliasId) {
+  const row = btn.closest("tr");
+  const email = row?.querySelector(".email-text");
 
-  if (!confirm("Delete " + (email ? email.textContent.trim() : "this alias") + "?"))
-    return;
+  if (!confirm(`Delete ${email?.textContent.trim() ?? "this alias"}?`)) return;
 
   btn.classList.add("pin-disabled");
 
-  fetch("/api/alias/" + aliasId, { method: "DELETE" })
-    .then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
+  try {
+    const resp = await fetch(`/api/alias/${aliasId}`, { method: "DELETE" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-      row.style.transition = "opacity 0.3s";
-      row.style.opacity = "0";
+    row.style.transition = "opacity 0.3s";
+    row.style.opacity = "0";
 
-      setTimeout(function () {
-        row.remove();
+    setTimeout(() => {
+      row.remove();
 
-        // Hide pinned section if empty
-        var pinnedBody = document.getElementById("pinned-body");
-        if (!pinnedBody.children.length) {
-          document.getElementById("pinned-section").classList.add("hidden");
-        }
+      const pinnedBody = document.getElementById("pinned-body");
+      if (!pinnedBody.children.length) {
+        document.getElementById("pinned-section").classList.add("hidden");
+      }
 
-        // Update count
-        var total = document.querySelectorAll(
-          "#pinned-body tr, #alias-body tr:not(#loader)"
-        ).length;
-        document.querySelector(".count").textContent =
-          "(" + total + " aliases)";
-      }, 300);
-    })
-    .catch(function () {
-      btn.classList.remove("pin-disabled");
-      showToast("Failed to delete alias: server error", "error");
-    });
+      const total = document.querySelectorAll(
+        "#pinned-body tr, #alias-body tr:not(#loader)"
+      ).length;
+      document.querySelector(".count").textContent = `(${total} aliases)`;
+    }, 300);
+  } catch {
+    btn.classList.remove("pin-disabled");
+    showToast("Failed to delete alias: server error", "error");
+  }
 }
 
 /* ===== Pin Toggle ===== */
 
-var PIN_SVG =
+/** @type {string} */
+const PIN_SVG =
   '<svg class="pin-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" ' +
   'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
   '<path d="M12 17v5"/>' +
@@ -238,7 +244,8 @@ var PIN_SVG =
   'a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 ' +
   '2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>';
 
-var UNPIN_SVG =
+/** @type {string} */
+const UNPIN_SVG =
   '<svg class="pin-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" ' +
   'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
   '<path d="M12 17v5"/>' +
@@ -247,107 +254,126 @@ var UNPIN_SVG =
   '<path d="M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h11"/>' +
   "</svg>";
 
-function togglePin(btn, aliasId, pinState) {
+/**
+ * Pins or unpins an alias and moves the row between tables.
+ * @param {HTMLButtonElement} btn - The pin/unpin button
+ * @param {number} aliasId - SimpleLogin alias ID
+ * @param {boolean} pinState - `true` to pin, `false` to unpin
+ */
+async function togglePin(btn, aliasId, pinState) {
   btn.classList.add("pin-disabled");
 
-  fetch("/api/alias/" + aliasId + "/pin", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pinned: pinState }),
-  })
-    .then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-
-      var row = btn.closest("tr");
-      var pinnedBody = document.getElementById("pinned-body");
-      var aliasBody = document.getElementById("alias-body");
-      var pinnedSection = document.getElementById("pinned-section");
-
-      if (pinState) {
-        row.setAttribute("data-pinned", "true");
-        insertSorted(pinnedBody, row, "pinned-table");
-        pinnedSection.classList.remove("hidden");
-      } else {
-        row.setAttribute("data-pinned", "false");
-        insertSorted(aliasBody, row, "main-table");
-        if (!pinnedBody.children.length)
-          pinnedSection.classList.add("hidden");
-      }
-
-      btn.setAttribute(
-        "onclick",
-        "togglePin(this, " + aliasId + ", " + !pinState + ")"
-      );
-      btn.title = pinState ? "Unpin" : "Pin";
-      btn.innerHTML = pinState ? UNPIN_SVG : PIN_SVG;
-    })
-    .catch(function () {
-      showToast("Failed to update pin: server error", "error");
-    })
-    .finally(function () {
-      btn.classList.remove("pin-disabled");
+  try {
+    const resp = await fetch(`/api/alias/${aliasId}/pin`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pinned: pinState }),
     });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    const row = btn.closest("tr");
+    const pinnedBody = document.getElementById("pinned-body");
+    const aliasBody = document.getElementById("alias-body");
+    const pinnedSection = document.getElementById("pinned-section");
+
+    if (pinState) {
+      row.setAttribute("data-pinned", "true");
+      insertSorted(pinnedBody, row, "pinned-table");
+      pinnedSection.classList.remove("hidden");
+    } else {
+      row.setAttribute("data-pinned", "false");
+      insertSorted(aliasBody, row, "main-table");
+      if (!pinnedBody.children.length) {
+        pinnedSection.classList.add("hidden");
+      }
+    }
+
+    btn.setAttribute("onclick", `togglePin(this, ${aliasId}, ${!pinState})`);
+    btn.title = pinState ? "Unpin" : "Pin";
+    btn.innerHTML = pinState ? UNPIN_SVG : PIN_SVG;
+  } catch {
+    showToast("Failed to update pin: server error", "error");
+  } finally {
+    btn.classList.remove("pin-disabled");
+  }
 }
 
 /* ===== Inline Note Editing ===== */
 
+/**
+ * Closes all open note-edit fields by discarding changes.
+ */
 function closeAllEdits() {
-  document.querySelectorAll(".note-edit").forEach(function (editSpan) {
+  for (const editSpan of document.querySelectorAll(".note-edit")) {
     if (editSpan.style.display !== "none") {
       finishEdit(editSpan.closest("td.note"));
     }
-  });
+  }
 }
 
+/**
+ * Opens the inline note editor for a given note cell.
+ * @param {HTMLElement} el - Element inside the `.note` `<td>`
+ */
 function startEdit(el) {
   closeAllEdits();
 
-  var td = el.closest("td.note");
+  const td = el.closest("td.note");
   td.querySelector(".note-text").style.display = "none";
 
-  var editSpan = td.querySelector(".note-edit");
+  const editSpan = td.querySelector(".note-edit");
   editSpan.style.display = "";
 
-  var input = td.querySelector(".note-input");
+  const input = /** @type {HTMLInputElement} */ (td.querySelector(".note-input"));
   input.value = td.getAttribute("data-note");
   input.focus();
   input.select();
 }
 
-function saveNote(el) {
-  var td = el.closest("td.note");
-  var aliasId = td.getAttribute("data-alias-id");
-  var input = td.querySelector(".note-input");
-  var newNote = input.value;
+/**
+ * Saves the current note value to the API and closes the editor.
+ * @param {HTMLElement} el - Element inside the `.note` `<td>`
+ */
+async function saveNote(el) {
+  const td = el.closest("td.note");
+  const aliasId = td.getAttribute("data-alias-id");
+  const input = /** @type {HTMLInputElement} */ (td.querySelector(".note-input"));
+  const newNote = input.value;
 
-  fetch("/api/alias/" + aliasId + "/note", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ note: newNote }),
-  })
-    .then(function (resp) {
-      if (!resp.ok) throw new Error("Save failed");
-      td.setAttribute("data-note", newNote);
-      td.querySelector(".note-text").textContent = newNote;
-      finishEdit(td);
-    })
-    .catch(function () {
-      showToast("Failed to save note: server error", "error");
+  try {
+    const resp = await fetch(`/api/alias/${aliasId}/note`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note: newNote }),
     });
+    if (!resp.ok) throw new Error("Save failed");
+
+    td.setAttribute("data-note", newNote);
+    td.querySelector(".note-text").textContent = newNote;
+    finishEdit(td);
+  } catch {
+    showToast("Failed to save note: server error", "error");
+  }
 }
 
+/**
+ * Cancels the inline note editor without saving.
+ * @param {HTMLElement} el - Element inside the `.note` `<td>`
+ */
 function cancelEdit(el) {
-  var td = el.closest("td.note");
-  finishEdit(td);
+  finishEdit(el.closest("td.note"));
 }
 
+/**
+ * Hides the edit UI and restores the read-only note text.
+ * @param {HTMLTableCellElement} td - The `.note` table cell
+ */
 function finishEdit(td) {
   td.querySelector(".note-edit").style.display = "none";
   td.querySelector(".note-text").style.display = "";
 }
 
-// Click outside any open edit box cancels it
-document.addEventListener("mousedown", function (e) {
+document.addEventListener("mousedown", (e) => {
   if (
     !e.target.closest(".note-edit") &&
     !e.target.classList.contains("note-text")
@@ -358,24 +384,32 @@ document.addEventListener("mousedown", function (e) {
 
 /* ===== Fuzzy Search ===== */
 
-var fuseInstance = null;
+/**
+ * @typedef {Object} FuseItem
+ * @property {string} email
+ * @property {string} note
+ * @property {HTMLTableRowElement} row
+ */
 
+/** @type {Fuse | null} */
+let fuseInstance = null;
+
+/**
+ * Builds (or rebuilds) the Fuse.js search index from current table rows.
+ * @returns {FuseItem[]}
+ */
 function buildFuseIndex() {
-  var allRows = Array.from(
-    document.querySelectorAll("#pinned-body tr, #alias-body tr")
-  );
+  const allRows = [...document.querySelectorAll("#pinned-body tr, #alias-body tr")];
 
-  var items = allRows.map(function (row) {
-    var emailTd = row.querySelector("td.email");
-    var noteTd = row.querySelector("td.note");
-    return {
-      email: emailTd ? emailTd.textContent.trim() : "",
-      note: noteTd
-        ? noteTd.getAttribute("data-note") || noteTd.textContent.trim()
-        : "",
-      row: row,
-    };
-  });
+  /** @type {FuseItem[]} */
+  const items = allRows.map((row) => ({
+    email: row.querySelector("td.email")?.textContent.trim() ?? "",
+    note:
+      row.querySelector("td.note")?.getAttribute("data-note") ??
+      row.querySelector("td.note")?.textContent.trim() ??
+      "",
+    row: /** @type {HTMLTableRowElement} */ (row),
+  }));
 
   fuseInstance = new Fuse(items, {
     keys: ["email", "note"],
@@ -386,68 +420,66 @@ function buildFuseIndex() {
   return items;
 }
 
+/**
+ * Filters visible alias rows using fuzzy matching.
+ * @param {string} query - Search query (empty string shows all)
+ */
 function fuzzyFilter(query) {
-  var allRows = Array.from(
-    document.querySelectorAll("#pinned-body tr, #alias-body tr")
-  );
+  const allRows = [...document.querySelectorAll("#pinned-body tr, #alias-body tr")];
+  const pinnedBody = document.getElementById("pinned-body");
+  const pinnedSection = document.getElementById("pinned-section");
 
-  if (!query || !query.trim()) {
-    allRows.forEach(function (row) {
-      row.style.display = "";
-    });
-    var pinnedBody = document.getElementById("pinned-body");
-    var pinnedSection = document.getElementById("pinned-section");
+  if (!query?.trim()) {
+    for (const row of allRows) row.style.display = "";
     if (pinnedBody.children.length > 0) {
       pinnedSection.classList.remove("hidden");
     }
     return;
   }
 
-  var items = buildFuseIndex();
-  var results = fuseInstance.search(query);
-  var matchedRows = new Set(
-    results.map(function (r) {
-      return r.item.row;
-    })
-  );
+  buildFuseIndex();
+  const results = fuseInstance.search(query);
+  const matchedRows = new Set(results.map((r) => r.item.row));
 
-  allRows.forEach(function (row) {
+  for (const row of allRows) {
     row.style.display = matchedRows.has(row) ? "" : "none";
-  });
-
-  var pinnedBody = document.getElementById("pinned-body");
-  var pinnedSection = document.getElementById("pinned-section");
-  var hasVisiblePinned = Array.from(pinnedBody.children).some(function (r) {
-    return r.style.display !== "none";
-  });
-
-  if (hasVisiblePinned) {
-    pinnedSection.classList.remove("hidden");
-  } else {
-    pinnedSection.classList.add("hidden");
   }
+
+  const hasVisiblePinned = [...pinnedBody.children].some(
+    (r) => r.style.display !== "none"
+  );
+  pinnedSection.classList.toggle("hidden", !hasVisiblePinned);
 }
 
 /* ===== Table Sorting ===== */
 
-var sortStates = {
+/**
+ * @typedef {Object} SortState
+ * @property {number | null} col - Currently sorted column index
+ * @property {boolean} asc - Sort direction
+ */
+
+/** @type {Record<string, SortState>} */
+const sortStates = {
   "pinned-table": { col: null, asc: true },
   "main-table": { col: null, asc: true },
 };
 
+/**
+ * Returns a comparator for sorting table rows by column.
+ * @param {number} colIndex - Column index to sort by
+ * @param {boolean} asc - `true` for ascending, `false` for descending
+ * @returns {(a: HTMLTableRowElement, b: HTMLTableRowElement) => number}
+ */
 function sortComparator(colIndex, asc) {
-  return function (a, b) {
-    var aText = (a.children[colIndex] ? a.children[colIndex].textContent : "")
-      .trim()
-      .toLowerCase();
-    var bText = (b.children[colIndex] ? b.children[colIndex].textContent : "")
-      .trim()
-      .toLowerCase();
+  return (a, b) => {
+    const aText = (a.children[colIndex]?.textContent ?? "").trim().toLowerCase();
+    const bText = (b.children[colIndex]?.textContent ?? "").trim().toLowerCase();
 
-    // Date columns: push empty values to one end
+    // Date columns: push empty/placeholder values to one end
     if (colIndex === 3 || colIndex === 4) {
-      var aVal = aText === "—" || aText === "" ? "" : aText;
-      var bVal = bText === "—" || bText === "" ? "" : bText;
+      const aVal = aText === "—" || aText === "" ? "" : aText;
+      const bVal = bText === "—" || bText === "" ? "" : bText;
 
       if (aVal === "" && bVal === "") return 0;
       if (aVal === "") return asc ? -1 : 1;
@@ -460,43 +492,53 @@ function sortComparator(colIndex, asc) {
   };
 }
 
+/**
+ * Re-sorts all rows in a `<tbody>` according to the given sort state.
+ * @param {HTMLTableSectionElement} tbody
+ * @param {SortState} state
+ */
 function sortBody(tbody, state) {
   if (state.col === null) return;
 
-  var rows = Array.from(tbody.querySelectorAll("tr:not(#loader)"));
+  const rows = [...tbody.querySelectorAll("tr:not(#loader)")];
   if (!rows.length) return;
 
   rows.sort(sortComparator(state.col, state.asc));
-  rows.forEach(function (row) {
-    tbody.appendChild(row);
-  });
+  for (const row of rows) tbody.appendChild(row);
 }
 
+/**
+ * Inserts a row into a `<tbody>` in its correct sorted position.
+ * @param {HTMLTableSectionElement} tbody - Target table body
+ * @param {HTMLTableRowElement} row - Row to insert
+ * @param {string} tableId - Table identifier (key into `sortStates`)
+ */
 function insertSorted(tbody, row, tableId) {
-  var state = sortStates[tableId];
+  const state = sortStates[tableId];
 
   if (!state || state.col === null) {
     tbody.appendChild(row);
     return;
   }
 
-  var cmp = sortComparator(state.col, state.asc);
-  var existing = Array.from(tbody.querySelectorAll("tr:not(#loader)"));
-  var inserted = false;
+  const cmp = sortComparator(state.col, state.asc);
+  const existing = [...tbody.querySelectorAll("tr:not(#loader)")];
+  const ref = existing.find((r) => cmp(row, r) < 0);
 
-  for (var i = 0; i < existing.length; i++) {
-    if (cmp(row, existing[i]) < 0) {
-      tbody.insertBefore(row, existing[i]);
-      inserted = true;
-      break;
-    }
+  if (ref) {
+    tbody.insertBefore(row, ref);
+  } else {
+    tbody.appendChild(row);
   }
-
-  if (!inserted) tbody.appendChild(row);
 }
 
+/**
+ * Sorts a table by the given column, toggling direction on repeated clicks.
+ * @param {string} tableId - DOM id of the `<table>`
+ * @param {number} colIndex - Column index to sort by
+ */
 function sortTable(tableId, colIndex) {
-  var state = sortStates[tableId];
+  const state = sortStates[tableId];
 
   if (state.col === colIndex) {
     state.asc = !state.asc;
@@ -505,134 +547,165 @@ function sortTable(tableId, colIndex) {
     state.asc = true;
   }
 
-  var table = document.getElementById(tableId);
+  const table = document.getElementById(tableId);
   sortBody(table.querySelector("tbody"), state);
 
-  // Update arrow indicators for this table only
-  table.querySelectorAll("thead th").forEach(function (th) {
-    var existing = th.querySelector(".arrow");
-    if (existing) existing.remove();
+  for (const th of table.querySelectorAll("thead th")) {
+    th.querySelector(".arrow")?.remove();
 
-    if (parseInt(th.getAttribute("data-col")) === colIndex) {
-      var arrow = document.createElement("span");
+    if (parseInt(th.getAttribute("data-col"), 10) === colIndex) {
+      const arrow = document.createElement("span");
       arrow.className = "arrow";
       arrow.textContent = state.asc ? " ▲" : " ▼";
       th.appendChild(arrow);
     }
-  });
+  }
 }
 
 /* ===== Alias Creation ===== */
 
-var aliasOptions = null;
+/**
+ * @typedef {Object} AliasSuffix
+ * @property {string} suffix - e.g. ".abc123@domain.com"
+ * @property {string} signed_suffix
+ * @property {boolean} is_custom
+ */
 
-function loadAliasOptions() {
-  fetch("/api/alias/options")
-    .then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    })
-    .then(function (data) {
-      aliasOptions = data;
+/**
+ * @typedef {Object} AliasOptions
+ * @property {AliasSuffix[]} suffixes
+ * @property {number} default_mailbox_id
+ */
 
-      var select = document.getElementById("create-domain");
-      select.innerHTML = '<option value="">simplelogin (auto)</option>';
+/** @type {AliasOptions | null} */
+let aliasOptions = null;
 
-      var suffixes = data.suffixes || [];
-      var customDomains = {};
+/**
+ * Fetches alias creation options (suffixes, mailbox) from the API.
+ */
+async function loadAliasOptions() {
+  try {
+    const resp = await fetch("/api/alias/options");
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-      suffixes.forEach(function (s) {
-        if (s.is_custom) {
-          // Extract domain from suffix like ".something@domain.com"
-          var domain = s.suffix.split("@")[1];
-          if (!customDomains[domain]) {
-            customDomains[domain] = s;
-            var opt = document.createElement("option");
-            opt.value = domain;
-            opt.textContent = domain;
-            select.appendChild(opt);
-          }
+    aliasOptions = await resp.json();
+
+    const select = /** @type {HTMLSelectElement} */ (
+      document.getElementById("create-domain")
+    );
+    select.innerHTML = '<option value="">simplelogin (auto)</option>';
+
+    /** @type {Record<string, AliasSuffix>} */
+    const customDomains = {};
+
+    for (const s of aliasOptions.suffixes ?? []) {
+      if (s.is_custom) {
+        const domain = s.suffix.split("@")[1];
+        if (!customDomains[domain]) {
+          customDomains[domain] = s;
+          const opt = document.createElement("option");
+          opt.value = domain;
+          opt.textContent = domain;
+          select.appendChild(opt);
         }
-      });
+      }
+    }
 
-      document.getElementById("create-btn").disabled = false;
-    })
-    .catch(function () {
-      showToast("Failed to load alias creation options", "error");
-    });
-}
-
-function randAlphanumeric(n) {
-  var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  var result = "";
-  for (var i = 0; i < n; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+    /** @type {HTMLButtonElement} */ (
+      document.getElementById("create-btn")
+    ).disabled = false;
+  } catch {
+    showToast("Failed to load alias creation options", "error");
   }
-  return result;
 }
 
+/**
+ * Generates a random alphanumeric string.
+ * @param {number} length - Desired string length
+ * @returns {string}
+ */
+function randAlphanumeric(length) {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  return Array.from({ length }, () =>
+    chars.charAt(Math.floor(Math.random() * chars.length))
+  ).join("");
+}
+
+/**
+ * Finds a custom suffix matching the given domain.
+ * @param {string} domain - Domain to match (e.g. "example.com")
+ * @returns {AliasSuffix | undefined}
+ */
 function findSuffix(domain) {
-  var suffixes = (aliasOptions && aliasOptions.suffixes) || [];
-  for (var i = 0; i < suffixes.length; i++) {
-    if (suffixes[i].is_custom && suffixes[i].suffix.split("@")[1] === domain) {
-      return suffixes[i];
-    }
-  }
-  return null;
+  return (aliasOptions?.suffixes ?? []).find(
+    (s) => s.is_custom && s.suffix.split("@")[1] === domain
+  );
 }
 
+/**
+ * Finds the best default (non-custom) suffix, preferring simplelogin.com.
+ * @returns {AliasSuffix | undefined}
+ */
 function findDefaultSuffix() {
-  var suffixes = (aliasOptions && aliasOptions.suffixes) || [];
-  var slcom = null;
-  var slmail = null;
+  const suffixes = aliasOptions?.suffixes ?? [];
 
-  for (var i = 0; i < suffixes.length; i++) {
-    if (suffixes[i].is_custom) continue;
-    if (suffixes[i].suffix.indexOf("@simplelogin.com") !== -1)
-      slcom = suffixes[i];
-    if (suffixes[i].suffix.indexOf("@slmail.me") !== -1)
-      slmail = suffixes[i];
-  }
+  const slcom = suffixes.find(
+    (s) => !s.is_custom && s.suffix.includes("@simplelogin.com")
+  );
+  const slmail = suffixes.find(
+    (s) => !s.is_custom && s.suffix.includes("@slmail.me")
+  );
 
-  return slcom || slmail || findShortestNonCustomSuffix();
+  return slcom ?? slmail ?? findShortestNonCustomSuffix();
 }
 
+/**
+ * Finds the shortest non-custom suffix available.
+ * @returns {AliasSuffix | undefined}
+ */
 function findShortestNonCustomSuffix() {
-  var suffixes = (aliasOptions && aliasOptions.suffixes) || [];
-  var best = null;
+  const suffixes = (aliasOptions?.suffixes ?? []).filter((s) => !s.is_custom);
+  if (!suffixes.length) return undefined;
 
-  for (var i = 0; i < suffixes.length; i++) {
-    if (
-      !suffixes[i].is_custom &&
-      (!best || suffixes[i].suffix.length < best.suffix.length)
-    ) {
-      best = suffixes[i];
-    }
-  }
-
-  return best;
+  return suffixes.reduce((shortest, s) =>
+    s.suffix.length < shortest.suffix.length ? s : shortest
+  );
 }
 
-function createAlias() {
+/**
+ * Creates a new alias via the API using the current form inputs.
+ */
+async function createAlias() {
   if (!aliasOptions) return;
 
-  var prefix = document.getElementById("create-prefix").value.trim();
-  var domain = document.getElementById("create-domain").value;
-  var random = document.getElementById("create-random").checked;
-  var btn = document.getElementById("create-btn");
-  var body;
+  const prefix = /** @type {HTMLInputElement} */ (
+    document.getElementById("create-prefix")
+  ).value.trim();
+  const domain = /** @type {HTMLSelectElement} */ (
+    document.getElementById("create-domain")
+  ).value;
+  const random = /** @type {HTMLInputElement} */ (
+    document.getElementById("create-random")
+  ).checked;
+  const btn = /** @type {HTMLButtonElement} */ (
+    document.getElementById("create-btn")
+  );
 
-  // Nothing to create
   if (!prefix && !random) {
     showToast("Cannot create alias: enter a prefix or enable random", "error");
     return;
   }
 
-  // Random UUID with no prefix and no custom domain
+  /** @type {Record<string, unknown>} */
+  let body;
+
   if (random && !prefix && !domain) {
     body = { random_uuid: true };
   } else {
-    var suffix, finalPrefix;
+    /** @type {AliasSuffix | undefined} */
+    let suffix;
+    /** @type {string} */
+    let finalPrefix;
 
     if (domain) {
       suffix = findSuffix(domain);
@@ -645,19 +718,14 @@ function createAlias() {
       }
 
       if (random && prefix) {
-        finalPrefix = prefix + "." + randAlphanumeric(8);
-      } else if (random && !prefix) {
+        finalPrefix = `${prefix}.${randAlphanumeric(8)}`;
+      } else if (random) {
         finalPrefix = randAlphanumeric(8);
       } else {
         finalPrefix = prefix;
       }
     } else {
-      // No custom domain — use default suffixes
-      if (random) {
-        suffix = findShortestNonCustomSuffix();
-      } else {
-        suffix = findDefaultSuffix();
-      }
+      suffix = random ? findShortestNonCustomSuffix() : findDefaultSuffix();
       if (!suffix) {
         showToast("Cannot create alias: no domain suffix available", "error");
         return;
@@ -675,38 +743,33 @@ function createAlias() {
   btn.disabled = true;
   showToast("Creating alias…", "info", 2500);
 
-  fetch("/api/alias/create", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  })
-    .then(function (r) {
-      return r.json().then(function (data) {
-        return { status: r.status, data: data };
-      });
-    })
-    .then(function (result) {
-      if (result.status >= 400) {
-        throw new Error(result.data.error || "Creation failed");
-      }
-      showToast("Alias created: " + result.data.email, "success");
-      document.getElementById("create-prefix").value = "";
-      startStream();
-    })
-    .catch(function (err) {
-      showToast("Failed to create alias: " + err.message, "error");
-    })
-    .finally(function () {
-      btn.disabled = false;
+  try {
+    const resp = await fetch("/api/alias/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
+    const data = await resp.json();
+
+    if (resp.status >= 400) {
+      throw new Error(data.error ?? "Creation failed");
+    }
+
+    showToast(`Alias created: ${data.email}`, "success");
+    /** @type {HTMLInputElement} */ (
+      document.getElementById("create-prefix")
+    ).value = "";
+    startStream();
+  } catch (err) {
+    showToast(`Failed to create alias: ${err.message}`, "error");
+  } finally {
+    btn.disabled = false;
+  }
 }
 
-// Allow Enter key in prefix input to create
-document
-  .getElementById("create-prefix")
-  .addEventListener("keydown", function (e) {
-    if (e.key === "Enter") createAlias();
-  });
+document.getElementById("create-prefix").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") createAlias();
+});
 
 /* ===== Init ===== */
 
