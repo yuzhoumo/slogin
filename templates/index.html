@@ -68,6 +68,12 @@
     .pin-btn.pin-disabled { opacity: 0.4; pointer-events: none; }
     .pin-icon { vertical-align: middle; }
 
+    /* Delete button */
+    .actions { text-align: center; }
+    .delete-btn { background: none; border: none; cursor: pointer; color: #666; padding: 2px; line-height: 1; vertical-align: middle; }
+    .delete-btn:hover { color: #f06060; }
+    .delete-btn.pin-disabled { opacity: 0.4; pointer-events: none; }
+
     /* Pinned section */
     .pinned-section { margin-bottom: 16px; }
     .pinned-section h2 { font-size: 12px; font-weight: 500; color: #999; margin-bottom: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
@@ -126,6 +132,7 @@
         <col>
         <col style="width: 170px;">
         <col style="width: 170px;">
+        <col style="width: 40px;">
       </colgroup>
       <thead>
         <tr>
@@ -134,6 +141,7 @@
           <th data-col="2" onclick="sortTable('pinned-table', 2)">Description</th>
           <th data-col="3" onclick="sortTable('pinned-table', 3)">Last Activity</th>
           <th data-col="4" onclick="sortTable('pinned-table', 4)">Created</th>
+          <th></th>
         </tr>
       </thead>
       <tbody id="pinned-body"></tbody>
@@ -146,6 +154,7 @@
       <col>
       <col style="width: 170px;">
       <col style="width: 170px;">
+      <col style="width: 40px;">
     </colgroup>
     <thead>
       <tr>
@@ -154,11 +163,12 @@
         <th data-col="2" onclick="sortTable('main-table', 2)">Description</th>
         <th data-col="3" onclick="sortTable('main-table', 3)">Last Activity</th>
         <th data-col="4" onclick="sortTable('main-table', 4)">Created</th>
+        <th></th>
       </tr>
     </thead>
     <tbody id="alias-body">
       <tr id="loader">
-        <td colspan="5">
+        <td colspan="6">
           <div class="loading">
             Loading aliases<span class="dots"><span>.</span><span>.</span><span>.</span></span>
           </div>
@@ -203,7 +213,7 @@
 
       // Only show loader if table is empty
       if (!body.children.length || body.querySelector("#loader")) {
-        body.innerHTML = '<tr id="loader"><td colspan="5"><div class="loading">Loading aliases<span class="dots"><span>.</span><span>.</span><span>.</span></span></div></td></tr>';
+        body.innerHTML = '<tr id="loader"><td colspan="6"><div class="loading">Loading aliases<span class="dots"><span>.</span><span>.</span><span>.</span></span></div></td></tr>';
         document.querySelector(".count").textContent = "(…)";
       }
       pinnedBody.innerHTML = "";
@@ -247,6 +257,10 @@
         document.querySelectorAll(".pin-btn.pin-disabled").forEach(function(el) {
           el.classList.remove("pin-disabled");
         });
+        // Enable delete buttons
+        document.querySelectorAll(".delete-btn.pin-disabled").forEach(function(el) {
+          el.classList.remove("pin-disabled");
+        });
         // Reset fuzzy search state
         document.getElementById("search-input").value = "";
         fuseInstance = null;
@@ -268,6 +282,37 @@
       navigator.clipboard.writeText(el.textContent.trim());
       el.classList.add("copied");
       setTimeout(function() { el.classList.remove("copied"); }, 400);
+    }
+
+    function deleteAlias(btn, aliasId) {
+      var row = btn.closest("tr");
+      var email = row.querySelector(".email-text");
+      if (!confirm("Delete " + (email ? email.textContent.trim() : "this alias") + "?")) return;
+      btn.classList.add("pin-disabled");
+      fetch("/api/alias/" + aliasId, { method: "DELETE" })
+        .then(function(r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          row.style.transition = "opacity 0.3s";
+          row.style.opacity = "0";
+          setTimeout(function() {
+            row.remove();
+            // Hide pinned section if empty
+            var pinnedBody = document.getElementById("pinned-body");
+            if (!pinnedBody.children.length) {
+              document.getElementById("pinned-section").classList.add("hidden");
+            }
+            // Update count
+            var total = document.querySelectorAll("#pinned-body tr, #alias-body tr:not(#loader)").length;
+            document.querySelector(".count").textContent = "(" + total + ")";
+          }, 300);
+        })
+        .catch(function() {
+          btn.classList.remove("pin-disabled");
+          var statusMsg = document.getElementById("status-msg");
+          statusMsg.style.color = "#f06060";
+          statusMsg.textContent = "✗ Delete failed";
+          setTimeout(function() { statusMsg.textContent = ""; }, 3000);
+        });
     }
 
     function toggleAlias(el, aliasId) {

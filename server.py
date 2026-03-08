@@ -82,6 +82,15 @@ def api_patch(path, json_body=None):
     )
 
 
+def api_delete(path):
+    """Rate-limited DELETE request to the SimpleLogin API."""
+    rate_limiter.acquire()
+    return requests.delete(
+        f"{API_BASE}{path}",
+        headers={"Authentication": API_KEY},
+    )
+
+
 def fetch_alias_count():
     """Use the stats endpoint to determine total alias count."""
     resp = api_get("/api/stats")
@@ -300,6 +309,19 @@ def toggle_alias(alias_id):
         return jsonify(resp.json())
     except Exception as e:
         log.error("toggle failed for alias %d: %s", alias_id, e)
+        return jsonify({"error": str(e)}), 502
+
+
+@app.route("/api/alias/<int:alias_id>", methods=["DELETE"])
+def delete_alias(alias_id):
+    """Delete an alias."""
+    log.info("DELETE /api/alias/%d", alias_id)
+    try:
+        resp = api_delete(f"/api/aliases/{alias_id}")
+        resp.raise_for_status()
+        return jsonify(resp.json())
+    except Exception as e:
+        log.error("delete failed for alias %d: %s", alias_id, e)
         return jsonify({"error": str(e)}), 502
 
 
