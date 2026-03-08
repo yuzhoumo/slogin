@@ -78,6 +78,20 @@
     #search-input { width: 100%; background: #2a2a3e; border: 1px solid #444; color: #e0e0e0; font-family: inherit; font-size: 13px; padding: 6px 10px; border-radius: 4px; }
     #search-input:focus { outline: none; border-color: #7fbbf0; }
     #search-input::placeholder { color: #666; }
+
+    /* Create alias bar */
+    .create-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; padding: 8px 10px; background: #222240; border: 1px solid #333; border-radius: 4px; }
+    .create-input { background: #2a2a3e; border: 1px solid #444; color: #e0e0e0; font-family: inherit; font-size: 13px; padding: 4px 8px; border-radius: 3px; width: 180px; }
+    .create-input:focus { outline: none; border-color: #7fbbf0; }
+    .create-input::placeholder { color: #666; }
+    .create-at { color: #777; font-size: 13px; }
+    .create-select { background: #2a2a3e; border: 1px solid #444; color: #e0e0e0; font-family: inherit; font-size: 12px; padding: 4px 6px; border-radius: 3px; }
+    .create-select:focus { outline: none; border-color: #7fbbf0; }
+    .create-random-label { color: #aaa; font-size: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; white-space: nowrap; }
+    .create-btn { background: #2a4a2a; border: 1px solid #4a6a4a; color: #8f8; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; white-space: nowrap; }
+    .create-btn:hover { background: #3a5a3a; border-color: #6a8a6a; }
+    .create-btn:disabled { opacity: 0.4; pointer-events: none; }
+    .create-msg { font-size: 12px; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -90,6 +104,16 @@
   </header>
   <div class="search-bar">
     <input type="text" id="search-input" placeholder="Search aliases…" oninput="fuzzyFilter(this.value)">
+  </div>
+  <div class="create-bar" id="create-bar">
+    <input type="text" id="create-prefix" placeholder="alias prefix" class="create-input">
+    <span class="create-at">@</span>
+    <select id="create-domain" class="create-select">
+      <option value="">simplelogin (auto)</option>
+    </select>
+    <label class="create-random-label"><input type="checkbox" id="create-random" checked> random</label>
+    <button class="create-btn" onclick="createAlias()" id="create-btn">+ Create</button>
+    <span id="create-msg" class="create-msg"></span>
   </div>
   <div id="pinned-section" class="pinned-section hidden">
     <table id="pinned-table">
@@ -223,6 +247,8 @@
         // Reset fuzzy search state
         document.getElementById("search-input").value = "";
         fuseInstance = null;
+        // Fetch alias creation options
+        loadAliasOptions();
       });
 
       source.onerror = function() {
@@ -496,6 +522,151 @@
       });
     }
 
+    // --- Alias Creation ---
+    var aliasOptions = null;
+
+    function loadAliasOptions() {
+      fetch("/api/alias/options").then(function(r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      }).then(function(data) {
+        aliasOptions = data;
+        var select = document.getElementById("create-domain");
+        select.innerHTML = '<option value="">simplelogin (auto)</option>';
+        var suffixes = data.suffixes || [];
+        var customDomains = {};
+        suffixes.forEach(function(s) {
+          if (s.is_custom) {
+            // Extract domain from suffix like ".something@domain.com" → "domain.com"
+            var domain = s.suffix.split("@")[1];
+            if (!customDomains[domain]) {
+              customDomains[domain] = s;
+              var opt = document.createElement("option");
+              opt.value = domain;
+              opt.textContent = domain;
+              select.appendChild(opt);
+            }
+          }
+        });
+        document.getElementById("create-btn").disabled = false;
+      }).catch(function() {
+        showCreateMsg("✗ Failed to load options", "#f06060");
+      });
+    }
+
+    function randAlphanumeric(n) {
+      var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+      var result = "";
+      for (var i = 0; i < n; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+      return result;
+    }
+
+    function showCreateMsg(text, color) {
+      var msg = document.getElementById("create-msg");
+      msg.textContent = text;
+      msg.style.color = color || "#888";
+      if (text) setTimeout(function() { msg.textContent = ""; }, 4000);
+    }
+
+    function findSuffix(domain) {
+      // Find signed suffix for a specific custom domain
+      var suffixes = (aliasOptions && aliasOptions.suffixes) || [];
+      for (var i = 0; i < suffixes.length; i++) {
+        if (suffixes[i].is_custom && suffixes[i].suffix.split("@")[1] === domain) {
+          return suffixes[i];
+        }
+      }
+      return null;
+    }
+
+    function findShortestNonCustomSuffix() {
+      var suffixes = (aliasOptions && aliasOptions.suffixes) || [];
+      var best = null;
+      for (var i = 0; i < suffixes.length; i++) {
+        if (!suffixes[i].is_custom && (!best || suffixes[i].suffix.length < best.suffix.length)) {
+          best = suffixes[i];
+        }
+      }
+      return best;
+    }
+
+    function createAlias() {
+      if (!aliasOptions) return;
+      var prefix = document.getElementById("create-prefix").value.trim();
+      var domain = document.getElementById("create-domain").value;
+      var random = document.getElementById("create-random").checked;
+      var btn = document.getElementById("create-btn");
+      var body;
+
+      // Case 7: nothing to create
+      if (!prefix && !random) {
+        showCreateMsg("Enter a prefix or enable random", "#f06060");
+        return;
+      }
+
+      // Case 1: random, no text, no custom domain → uuid random
+      if (random && !prefix && !domain) {
+        body = { random_uuid: true };
+      } else {
+        var suffix, finalPrefix;
+
+        if (domain) {
+          suffix = findSuffix(domain);
+          if (!suffix) { showCreateMsg("✗ Domain suffix not found", "#f06060"); return; }
+
+          if (random && prefix) {
+            // Case 4: text + random + custom domain
+            finalPrefix = prefix + "." + randAlphanumeric(8);
+          } else if (random && !prefix) {
+            // Case 5: random + custom domain, no text
+            finalPrefix = randAlphanumeric(8);
+          } else {
+            // Case 3: text + custom domain, no random
+            finalPrefix = prefix;
+          }
+        } else {
+          // No custom domain selected
+          suffix = findShortestNonCustomSuffix();
+          if (!suffix) { showCreateMsg("✗ No suffix available", "#f06060"); return; }
+          // Cases 2 & 6: text + shortest non-custom suffix
+          finalPrefix = prefix;
+        }
+
+        body = {
+          prefix: finalPrefix,
+          signed_suffix: suffix.signed_suffix,
+          mailbox_ids: [aliasOptions.default_mailbox_id],
+        };
+      }
+
+      btn.disabled = true;
+      showCreateMsg("creating…", "#888");
+
+      fetch("/api/alias/create", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(body)
+      }).then(function(r) {
+        return r.json().then(function(data) { return {status: r.status, data: data}; });
+      }).then(function(result) {
+        if (result.status >= 400) {
+          throw new Error(result.data.error || "Creation failed");
+        }
+        showCreateMsg("✓ " + result.data.email, "#6bcf6b");
+        document.getElementById("create-prefix").value = "";
+        // Refresh to show the new alias
+        startStream();
+      }).catch(function(err) {
+        showCreateMsg("✗ " + err.message, "#f06060");
+      }).finally(function() {
+        btn.disabled = false;
+      });
+    }
+
+    // Allow Enter key in prefix input to create
+    document.getElementById("create-prefix").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") createAlias();
+    });
 
     startStream();
   </script>

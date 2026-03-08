@@ -61,12 +61,13 @@ def api_get(path, params=None):
     )
 
 
-def api_post(path):
+def api_post(path, json_body=None):
     """Rate-limited POST request to the SimpleLogin API."""
     rate_limiter.acquire()
     return requests.post(
         f"{API_BASE}{path}",
         headers={"Authentication": API_KEY},
+        json=json_body,
     )
 
 
@@ -317,6 +318,42 @@ def toggle_pin(alias_id):
     pinned = data.get("pinned", False)
     log.info("PATCH /api/alias/%d/pin pinned=%s", alias_id, pinned)
     resp = api_patch(f"/api/aliases/{alias_id}", json_body={"pinned": pinned})
+    return (resp.json(), resp.status_code)
+
+
+@app.route("/api/alias/options")
+def alias_options():
+    """Get alias creation options (suffixes, mailboxes)."""
+    log.info("GET /api/alias/options")
+    opts_resp = api_get("/api/v5/alias/options")
+    opts_resp.raise_for_status()
+    mb_resp = api_get("/api/v2/mailboxes")
+    mb_resp.raise_for_status()
+    mailboxes = mb_resp.json().get("mailboxes", [])
+    default_mb = next((m for m in mailboxes if m.get("default")), mailboxes[0] if mailboxes else None)
+    result = opts_resp.json()
+    result["default_mailbox_id"] = default_mb["id"] if default_mb else None
+    return jsonify(result)
+
+
+@app.route("/api/alias/create", methods=["POST"])
+def create_alias():
+    """Create a new alias. Handles both random and custom creation."""
+    data = flask_request.get_json(force=True)
+    log.info("POST /api/alias/create %s", data)
+
+    if data.get("random_uuid"):
+        resp = api_post("/api/alias/random/new", json_body={"mode": "uuid"})
+    else:
+        body = {
+            "alias_prefix": data["prefix"],
+            "signed_suffix": data["signed_suffix"],
+            "mailbox_ids": data["mailbox_ids"],
+        }
+        if data.get("note"):
+            body["note"] = data["note"]
+        resp = api_post("/api/v3/alias/custom/new", json_body=body)
+
     return (resp.json(), resp.status_code)
 
 
