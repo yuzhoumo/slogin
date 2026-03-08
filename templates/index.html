@@ -95,7 +95,7 @@
     <table id="pinned-table">
       <colgroup>
         <col style="width: 80px;">
-        <col style="width: 30%;">
+        <col style="width: 35%;">
         <col>
         <col style="width: 170px;">
         <col style="width: 170px;">
@@ -105,8 +105,8 @@
           <th data-col="0" onclick="sortTable('pinned-table', 0)">Status</th>
           <th data-col="1" onclick="sortTable('pinned-table', 1)">Alias</th>
           <th data-col="2" onclick="sortTable('pinned-table', 2)">Description</th>
-          <th data-col="3" onclick="sortTable('pinned-table', 3)">Created</th>
-          <th data-col="4" onclick="sortTable('pinned-table', 4)">Last Activity</th>
+          <th data-col="3" onclick="sortTable('pinned-table', 3)">Last Activity</th>
+          <th data-col="4" onclick="sortTable('pinned-table', 4)">Created</th>
         </tr>
       </thead>
       <tbody id="pinned-body"></tbody>
@@ -115,7 +115,7 @@
   <table id="main-table">
     <colgroup>
       <col style="width: 80px;">
-      <col style="width: 30%;">
+      <col style="width: 35%;">
       <col>
       <col style="width: 170px;">
       <col style="width: 170px;">
@@ -125,8 +125,8 @@
         <th data-col="0" onclick="sortTable('main-table', 0)">Status</th>
         <th data-col="1" onclick="sortTable('main-table', 1)">Alias</th>
         <th data-col="2" onclick="sortTable('main-table', 2)">Description</th>
-        <th data-col="3" onclick="sortTable('main-table', 3)">Created</th>
-        <th data-col="4" onclick="sortTable('main-table', 4)">Last Activity</th>
+        <th data-col="3" onclick="sortTable('main-table', 3)">Last Activity</th>
+        <th data-col="4" onclick="sortTable('main-table', 4)">Created</th>
       </tr>
     </thead>
     <tbody id="alias-body">
@@ -145,10 +145,10 @@
     var tzAbbr = new Date().toLocaleTimeString("en-US", {timeZoneName: "short"}).split(" ").pop();
     // Update time-based headers with timezone
     document.querySelectorAll("th[data-col='3']").forEach(function(th) {
-      th.childNodes[0].textContent = "Created (" + tzAbbr + ")";
+      th.childNodes[0].textContent = "Last Activity (" + tzAbbr + ")";
     });
     document.querySelectorAll("th[data-col='4']").forEach(function(th) {
-      th.childNodes[0].textContent = "Last Activity (" + tzAbbr + ")";
+      th.childNodes[0].textContent = "Created (" + tzAbbr + ")";
     });
 
     function localizeTimestamps(container) {
