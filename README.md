@@ -1,30 +1,51 @@
-# sslogin
+# slogin
 
-Simple-SimpleLogin (sslogin) is a minimal opinionated client for SimpleLogin.
-It is optimized for compact visibility and exposes quick shortcuts for common
-use cases.
+A minimal, opinionated web client for [SimpleLogin](https://simplelogin.io).
+Optimized for compact visibility and quick alias management.
 
-Features:
-- Compact single-page list of all aliases
--
+> Note: This project is designed to run either locally or on private networks.
+> DO NOT expose this publicly, since there is no built-in authentication.
+
+## Features
+
+- Single-page view of all aliases with SSE streaming
+- Fuzzy search across emails and descriptions
+- Sortable columns (status, alias, description, last activity, created)
+- Inline note editing, pin/unpin, enable/disable, delete
+- Alias creation with custom prefix, domain selection, and random mode
+- Click-to-copy email addresses
+- Rate-limited API proxy to stay within SimpleLogin limits
 
 ## Setup
 
+Requires [uv](https://docs.astral.sh/uv/) and Python >= 3.14.
+
 ```bash
-# Install dependencies
+git clone https://github.com/yuzhoumo/slogin.git
+cd slogin
 uv sync
+```
 
-# Add your SimpleLogin API key
-echo "apikey=YOUR_API_KEY" > .env
+Create a `.env` file with your
+[SimpleLogin API key](https://app.simplelogin.io/dashboard/enter_sudo?next=%2Fdashboard%2Fapi_key):
 
-# Run the server
+```
+SLOGIN_API_KEY=your_api_key_here
+```
+
+## Usage
+
+```bash
 uv run server.py
 ```
 
-The app will be available at `http://localhost:5000`.
+Open `http://localhost:5000`.
 
-You can also run directly with uvicorn:
+## Configuration
 
-```bash
-uv run uvicorn app.main:app --reload --port 5000
-```
+All settings are optional environment variables (or `.env` entries):
+
+| Variable                  | Default                      | Description         |
+|---------------------------|------------------------------|---------------------|
+| `SLOGIN_API_KEY`          | *(required)*                 | SimpleLogin API key |
+| `SLOGIN_API_BASE`         | `https://app.simplelogin.io` | API base URL        |
