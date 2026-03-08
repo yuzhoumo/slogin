@@ -4,6 +4,7 @@ import time
 import logging
 import threading
 import requests
+from queue import Queue, Empty
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from flask import Flask, make_response, render_template, Response, request as flask_request, jsonify
@@ -34,18 +35,25 @@ class RateLimiter:
         self.period = period
         self.timestamps = []
         self.lock = threading.Lock()
+        self.on_wait = None  # optional callback(wait_seconds)
 
     def acquire(self):
+        """Acquire a slot. Returns the number of seconds waited, or 0."""
         with self.lock:
             now = time.monotonic()
             self.timestamps = [t for t in self.timestamps if now - t < self.period]
             if len(self.timestamps) >= self.max_calls:
                 wait = self.period - (now - self.timestamps[0])
                 log.info("rate limit: sleeping %.1fs", wait)
+                if self.on_wait:
+                    self.on_wait(wait)
                 time.sleep(wait)
                 now = time.monotonic()
                 self.timestamps = [t for t in self.timestamps if now - t < self.period]
+                self.timestamps.append(time.monotonic())
+                return wait
             self.timestamps.append(time.monotonic())
+            return 0
 
 
 rate_limiter = RateLimiter(RATE_LIMIT)
@@ -204,6 +212,10 @@ def aliases_stream():
             results = {}
             ready = threading.Event()
             results_lock = threading.Lock()
+            rate_events = Queue()
+
+            prev_on_wait = rate_limiter.on_wait
+            rate_limiter.on_wait = lambda secs: rate_events.put(secs)
 
             def store_page(page_id, batch):
                 with results_lock:
@@ -228,6 +240,14 @@ def aliases_stream():
             while True:
                 ready.wait(timeout=30)
                 ready.clear()
+
+                # Emit any rate-limit events to the client
+                while not rate_events.empty():
+                    try:
+                        secs = rate_events.get_nowait()
+                        yield f"event: ratelimit\ndata: {secs:.1f}\n\n"
+                    except Empty:
+                        break
 
                 # Determine total pages once stats returns
                 if total_pages is None and stats_future.done():
@@ -277,6 +297,7 @@ def aliases_stream():
 
             # Send final count + done signal
             yield f"event: done\ndata: {total_sent}\n\n"
+            rate_limiter.on_wait = prev_on_wait
             pool.shutdown(wait=False)
             total_ms = (time.monotonic() - total_start) * 1000
             log.info("streamed %d aliases in %.0fms", total_sent, total_ms)
