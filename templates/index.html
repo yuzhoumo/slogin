@@ -22,6 +22,9 @@
     td.note { white-space: normal; max-width: 300px; color: #999; }
     tr:hover td { background: #222244; }
     .email { color: #7fbbf0; }
+    .email-text { cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: background 0.15s; }
+    .email-text:hover { background: #333355; }
+    .email-text.copied { background: #2a4a2a; transition: background 0s; }
     .on { color: #6bcf6b; }
     .off { color: #f06060; }
     .ts { color: #aaa; }
@@ -198,6 +201,12 @@
           statusMsg.textContent = "✗ Server unreachable";
         }
       };
+    }
+
+    function copyEmail(el) {
+      navigator.clipboard.writeText(el.textContent.trim());
+      el.classList.add("copied");
+      setTimeout(function() { el.classList.remove("copied"); }, 400);
     }
 
     function toggleAlias(el, aliasId) {
