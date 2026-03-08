@@ -95,8 +95,9 @@
     <table id="pinned-table">
       <colgroup>
         <col style="width: 80px;">
-        <col style="width: 35%;">
+        <col style="width: 30%;">
         <col>
+        <col style="width: 170px;">
         <col style="width: 170px;">
       </colgroup>
       <thead>
@@ -104,7 +105,8 @@
           <th data-col="0" onclick="sortTable('pinned-table', 0)">Status</th>
           <th data-col="1" onclick="sortTable('pinned-table', 1)">Alias</th>
           <th data-col="2" onclick="sortTable('pinned-table', 2)">Description</th>
-          <th data-col="3" onclick="sortTable('pinned-table', 3)">Last Activity</th>
+          <th data-col="3" onclick="sortTable('pinned-table', 3)">Created</th>
+          <th data-col="4" onclick="sortTable('pinned-table', 4)">Last Activity</th>
         </tr>
       </thead>
       <tbody id="pinned-body"></tbody>
@@ -113,8 +115,9 @@
   <table id="main-table">
     <colgroup>
       <col style="width: 80px;">
-      <col style="width: 35%;">
+      <col style="width: 30%;">
       <col>
+      <col style="width: 170px;">
       <col style="width: 170px;">
     </colgroup>
     <thead>
@@ -122,12 +125,13 @@
         <th data-col="0" onclick="sortTable('main-table', 0)">Status</th>
         <th data-col="1" onclick="sortTable('main-table', 1)">Alias</th>
         <th data-col="2" onclick="sortTable('main-table', 2)">Description</th>
-        <th data-col="3" onclick="sortTable('main-table', 3)">Last Activity</th>
+        <th data-col="3" onclick="sortTable('main-table', 3)">Created</th>
+        <th data-col="4" onclick="sortTable('main-table', 4)">Last Activity</th>
       </tr>
     </thead>
     <tbody id="alias-body">
       <tr id="loader">
-        <td colspan="4">
+        <td colspan="5">
           <div class="loading">
             Loading aliases<span class="dots"><span>.</span><span>.</span><span>.</span></span>
           </div>
@@ -139,8 +143,11 @@
     // Detect local timezone abbreviation
     var localTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
     var tzAbbr = new Date().toLocaleTimeString("en-US", {timeZoneName: "short"}).split(" ").pop();
-    // Update all "Last Activity" headers with timezone
+    // Update time-based headers with timezone
     document.querySelectorAll("th[data-col='3']").forEach(function(th) {
+      th.childNodes[0].textContent = "Created (" + tzAbbr + ")";
+    });
+    document.querySelectorAll("th[data-col='4']").forEach(function(th) {
       th.childNodes[0].textContent = "Last Activity (" + tzAbbr + ")";
     });
 
@@ -169,7 +176,7 @@
 
       // Only show loader if table is empty
       if (!body.children.length || body.querySelector("#loader")) {
-        body.innerHTML = '<tr id="loader"><td colspan="4"><div class="loading">Loading aliases<span class="dots"><span>.</span><span>.</span><span>.</span></span></div></td></tr>';
+        body.innerHTML = '<tr id="loader"><td colspan="5"><div class="loading">Loading aliases<span class="dots"><span>.</span><span>.</span><span>.</span></span></div></td></tr>';
         document.querySelector(".count").textContent = "(…)";
       }
       pinnedBody.innerHTML = "";
@@ -425,7 +432,7 @@
       return function(a, b) {
         var aText = (a.children[colIndex] ? a.children[colIndex].textContent : "").trim().toLowerCase();
         var bText = (b.children[colIndex] ? b.children[colIndex].textContent : "").trim().toLowerCase();
-        if (colIndex === 3) {
+        if (colIndex === 3 || colIndex === 4) {
           var aVal = (aText === "—" || aText === "") ? "" : aText;
           var bVal = (bText === "—" || bText === "") ? "" : bText;
           if (aVal === "" && bVal === "") return 0;

@@ -167,6 +167,8 @@ def format_rows(aliases):
             "enabled": a["enabled"],
             "pinned": a.get("pinned", False),
             "note": a.get("note") or "",
+            "creation_ts": a.get("creation_timestamp"),
+            "creation_date": format_timestamp(a.get("creation_timestamp")),
             "last_activity": format_timestamp(last_ts),
             "last_activity_ts": last_ts,
         })
