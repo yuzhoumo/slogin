@@ -1,0 +1,8 @@
+{% for a in aliases %}
+<tr>
+  <td><span class="{{ 'on' if a.enabled else 'off' }}">{{ "✓ on" if a.enabled else "✗ off" }}</span></td>
+  <td class="email">{{ a.email }}</td>
+  <td class="note">{{ a.note }}</td>
+  <td class="ts">{{ a.last_activity }}</td>
+</tr>
+{% endfor %}

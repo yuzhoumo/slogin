@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SimpleLogin Aliases</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; color: #e0e0e0; background: #1a1a2e; padding: 20px; }
+    header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+    h1 { font-size: 15px; font-weight: 600; color: #ccc; }
+    .count { color: #888; font-size: 12px; }
+    .refresh { background: none; border: 1px solid #444; color: #aaa; padding: 3px 10px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; }
+    .refresh:hover { border-color: #888; color: #ddd; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; color: #777; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 8px; border-bottom: 1px solid #333; }
+    td { padding: 5px 8px; border-bottom: 1px solid #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    td.note { white-space: normal; max-width: 300px; color: #999; }
+    tr:hover td { background: #222244; }
+    .email { color: #7fbbf0; }
+    .on { color: #6bcf6b; }
+    .off { color: #f06060; }
+    .ts { color: #aaa; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: #888; gap: 10px; }
+    .loading .dots span { animation: blink 1.4s infinite both; }
+    .loading .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading .dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+    .status-msg { color: #f06060; font-size: 12px; }
+    tr.new { animation: fadeIn 0.2s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>SimpleLogin Aliases <span class="count">({{ total }})</span></h1>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span id="status-msg" class="status-msg"></span>
+      <button class="refresh" onclick="startStream()">↻ Refresh</button>
+    </div>
+  </header>
+  <table>
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Alias</th>
+        <th>Description</th>
+        <th>Last Activity</th>
+      </tr>
+    </thead>
+    <tbody id="alias-body">
+      <tr id="loader">
+        <td colspan="4">
+          <div class="loading">
+            Loading aliases<span class="dots"><span>.</span><span>.</span><span>.</span></span>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <script>
+    function startStream() {
+      var body = document.getElementById("alias-body");
+      var statusMsg = document.getElementById("status-msg");
+      statusMsg.textContent = "loading…";
+      statusMsg.style.color = "#888";
+
+      // Only show loader if table is empty
+      if (!body.children.length || body.querySelector("#loader")) {
+        body.innerHTML = '<tr id="loader"><td colspan="4"><div class="loading">Loading aliases<span class="dots"><span>.</span><span>.</span><span>.</span></span></div></td></tr>';
+        document.querySelector(".count").textContent = "(…)";
+      }
+
+      var source = new EventSource("/aliases/stream");
+      var first = true;
+      var gotData = false;
+      var prevBody = body.innerHTML;
+
+      source.addEventListener("page", function(e) {
+        gotData = true;
+        if (first) {
+          body.innerHTML = "";
+          first = false;
+        }
+        body.insertAdjacentHTML("beforeend", e.data);
+      });
+
+      source.addEventListener("done", function(e) {
+        document.querySelector(".count").textContent = "(" + e.data + ")";
+        statusMsg.textContent = "";
+        source.close();
+      });
+
+      source.onerror = function() {
+        source.close();
+        if (!gotData) {
+          body.innerHTML = prevBody;
+          statusMsg.style.color = "#f06060";
+          statusMsg.textContent = "✗ Server unreachable";
+        }
+      };
+    }
+
+    startStream();
+  </script>
+</body>
+</html>
