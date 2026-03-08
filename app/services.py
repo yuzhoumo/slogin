@@ -60,6 +60,10 @@ def format_rows(aliases: list[dict[str, Any]]) -> list[AliasRow]:
         last_ts: float | None = (
             last_activity["timestamp"] if last_activity else None
         )
+        contact: dict[str, Any] | None = (
+            last_activity.get("contact") if last_activity else None
+        )
+        contact_email: str = contact.get("email", "") if contact else ""
         rows.append(
             AliasRow(
                 id=a["id"],
@@ -71,6 +75,10 @@ def format_rows(aliases: list[dict[str, Any]]) -> list[AliasRow]:
                 creation_date=format_timestamp(a.get("creation_timestamp")),
                 last_activity=format_timestamp(last_ts),
                 last_activity_ts=last_ts,
+                last_activity_contact=contact_email,
+                nb_forward=a.get("nb_forward", 0),
+                nb_block=a.get("nb_block", 0),
+                nb_reply=a.get("nb_reply", 0),
             )
         )
     return rows

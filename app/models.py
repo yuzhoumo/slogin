@@ -16,6 +16,10 @@ class AliasRow(BaseModel):
     creation_date: str
     last_activity: str
     last_activity_ts: float | None
+    last_activity_contact: str
+    nb_forward: int
+    nb_block: int
+    nb_reply: int
 
 
 # API request bodies

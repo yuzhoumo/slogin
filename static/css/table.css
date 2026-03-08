@@ -34,6 +34,11 @@ td {
   white-space: nowrap;
 }
 
+td[data-tooltip],
+td:has([data-tooltip]) {
+  overflow: visible;
+}
+
 tr:hover td {
   background: #222244;
 }
