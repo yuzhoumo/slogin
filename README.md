@@ -22,3 +22,9 @@ uv run server.py
 ```
 
 The app will be available at `http://localhost:5000`.
+
+You can also run directly with uvicorn:
+
+```bash
+uv run uvicorn app.main:app --reload --port 5000
+```
