@@ -58,6 +58,18 @@
     .save-btn:hover { color: #8f8; }
     .cancel-btn { color: #f06060; }
     .cancel-btn:hover { color: #f88; }
+    /* Pin button */
+    .pin-btn { background: none; border: none; cursor: pointer; color: #777; padding: 0 4px 0 0; vertical-align: middle; line-height: 1; }
+    .pin-btn:hover { color: #ddd; }
+    .pin-btn.pin-disabled { opacity: 0.4; pointer-events: none; }
+    .pin-icon { vertical-align: middle; }
+
+    /* Pinned section */
+    .pinned-section { margin-bottom: 16px; }
+    .pinned-section h2 { font-size: 12px; font-weight: 500; color: #999; margin-bottom: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
+    .pinned-section table { border-left: 2px solid #7fbbf0; }
+    .pinned-section .pin-btn { color: #7fbbf0; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -68,6 +80,20 @@
       <button class="refresh" onclick="startStream()">↻ Refresh</button>
     </div>
   </header>
+  <div id="pinned-section" class="pinned-section hidden">
+    <h2>📌 Pinned</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Alias</th>
+          <th>Description</th>
+          <th>Last Activity</th>
+        </tr>
+      </thead>
+      <tbody id="pinned-body"></tbody>
+    </table>
+  </div>
   <table>
     <thead>
       <tr>
@@ -90,6 +116,8 @@
   <script>
     function startStream() {
       var body = document.getElementById("alias-body");
+      var pinnedBody = document.getElementById("pinned-body");
+      var pinnedSection = document.getElementById("pinned-section");
       var statusMsg = document.getElementById("status-msg");
       statusMsg.textContent = "loading…";
       statusMsg.style.color = "#888";
@@ -99,11 +127,19 @@
         body.innerHTML = '<tr id="loader"><td colspan="4"><div class="loading">Loading aliases<span class="dots"><span>.</span><span>.</span><span>.</span></span></div></td></tr>';
         document.querySelector(".count").textContent = "(…)";
       }
+      pinnedBody.innerHTML = "";
+      pinnedSection.classList.add("hidden");
 
       var source = new EventSource("/aliases/stream");
       var first = true;
       var gotData = false;
       var prevBody = body.innerHTML;
+
+      source.addEventListener("pinned", function(e) {
+        gotData = true;
+        pinnedBody.insertAdjacentHTML("beforeend", e.data);
+        pinnedSection.classList.remove("hidden");
+      });
 
       source.addEventListener("page", function(e) {
         gotData = true;
@@ -125,6 +161,10 @@
         // Enable inline editing on all note cells
         document.querySelectorAll("td.note-disabled").forEach(function(el) {
           el.classList.remove("note-disabled");
+        });
+        // Enable pin buttons
+        document.querySelectorAll(".pin-btn.pin-disabled").forEach(function(el) {
+          el.classList.remove("pin-disabled");
         });
       });
 
@@ -166,6 +206,61 @@
         .finally(function() {
           el.classList.remove("disabled");
         });
+    }
+
+    function togglePin(btn, aliasId, pinState) {
+      btn.classList.add("pin-disabled");
+      fetch("/api/alias/" + aliasId + "/pin", {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({pinned: pinState})
+      }).then(function(r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        // Move the row between pinned and unpinned tables
+        var row = btn.closest("tr");
+        var pinnedBody = document.getElementById("pinned-body");
+        var aliasBody = document.getElementById("alias-body");
+        var pinnedSection = document.getElementById("pinned-section");
+
+        if (pinState) {
+          // Pin: move to pinned table
+          row.setAttribute("data-pinned", "true");
+          pinnedBody.appendChild(row);
+          pinnedSection.classList.remove("hidden");
+        } else {
+          // Unpin: move to main table
+          row.setAttribute("data-pinned", "false");
+          aliasBody.appendChild(row);
+          if (!pinnedBody.children.length) pinnedSection.classList.add("hidden");
+        }
+
+        // Update the button's onclick and icon
+        btn.setAttribute("onclick", "togglePin(this, " + aliasId + ", " + !pinState + ")");
+        btn.title = pinState ? "Unpin" : "Pin";
+        var svg = btn.querySelector("svg");
+        var line = svg.querySelector("line");
+        if (pinState) {
+          // Just pinned — add strikethrough line for "unpin" icon
+          if (!line) {
+            var l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            l.setAttribute("x1", "2"); l.setAttribute("y1", "14");
+            l.setAttribute("x2", "14"); l.setAttribute("y2", "2");
+            l.setAttribute("stroke", "currentColor"); l.setAttribute("stroke-width", "1.2");
+            l.setAttribute("stroke-linecap", "round");
+            svg.appendChild(l);
+          }
+        } else {
+          // Just unpinned — remove strikethrough
+          if (line) line.remove();
+        }
+      }).catch(function() {
+        var statusMsg = document.getElementById("status-msg");
+        statusMsg.style.color = "#f06060";
+        statusMsg.textContent = "✗ Pin failed";
+        setTimeout(function() { statusMsg.textContent = ""; }, 3000);
+      }).finally(function() {
+        btn.classList.remove("pin-disabled");
+      });
     }
 
     function closeAllEdits() {

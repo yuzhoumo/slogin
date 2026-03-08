@@ -165,6 +165,7 @@ def format_rows(aliases):
             "id": a["id"],
             "email": a["email"],
             "enabled": a["enabled"],
+            "pinned": a.get("pinned", False),
             "note": a.get("note") or "",
             "last_activity": format_timestamp(last_ts),
         })
@@ -240,11 +241,17 @@ def aliases_stream():
                         break
 
                     rows = format_rows(batch)
+                    pinned_rows = [r for r in rows if r["pinned"]]
+                    unpinned_rows = [r for r in rows if not r["pinned"]]
                     total_sent += len(rows)
-                    html = render_template("rows.html", aliases=rows, total=total_sent)
-                    # SSE format: event name + data lines
-                    escaped = html.replace("\n", "\ndata: ")
-                    yield f"event: page\ndata: {escaped}\n\n"
+                    if pinned_rows:
+                        phtml = render_template("rows.html", aliases=pinned_rows, total=total_sent)
+                        escaped = phtml.replace("\n", "\ndata: ")
+                        yield f"event: pinned\ndata: {escaped}\n\n"
+                    if unpinned_rows:
+                        uhtml = render_template("rows.html", aliases=unpinned_rows, total=total_sent)
+                        escaped = uhtml.replace("\n", "\ndata: ")
+                        yield f"event: page\ndata: {escaped}\n\n"
 
                     if len(batch) < ALIASES_PER_PAGE:
                         total_pages = next_page + 1
@@ -297,6 +304,16 @@ def update_alias_note(alias_id):
     data = flask_request.get_json(force=True)
     note = data.get("note", "")
     resp = api_patch(f"/api/aliases/{alias_id}", json_body={"note": note})
+    return (resp.json(), resp.status_code)
+
+
+@app.route("/api/alias/<int:alias_id>/pin", methods=["PATCH"])
+def toggle_pin(alias_id):
+    """Toggle pinned state of an alias."""
+    data = flask_request.get_json(force=True)
+    pinned = data.get("pinned", False)
+    log.info("PATCH /api/alias/%d/pin pinned=%s", alias_id, pinned)
+    resp = api_patch(f"/api/aliases/{alias_id}", json_body={"pinned": pinned})
     return (resp.json(), resp.status_code)
 
 
