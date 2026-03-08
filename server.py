@@ -61,13 +61,14 @@ def api_get(path, params=None):
     )
 
 
-def api_post(path, json_body=None):
+def api_post(path, json_body=None, params=None):
     """Rate-limited POST request to the SimpleLogin API."""
     rate_limiter.acquire()
     return requests.post(
         f"{API_BASE}{path}",
         headers={"Authentication": API_KEY},
         json=json_body,
+        params=params,
     )
 
 
@@ -343,7 +344,7 @@ def create_alias():
     log.info("POST /api/alias/create %s", data)
 
     if data.get("random_uuid"):
-        resp = api_post("/api/alias/random/new", json_body={"mode": "uuid"})
+        resp = api_post("/api/alias/random/new", params={"mode": "uuid"})
     else:
         body = {
             "alias_prefix": data["prefix"],

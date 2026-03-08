@@ -579,6 +579,16 @@
       return null;
     }
 
+    function findSlmailSuffix() {
+      var suffixes = (aliasOptions && aliasOptions.suffixes) || [];
+      for (var i = 0; i < suffixes.length; i++) {
+        if (!suffixes[i].is_custom && suffixes[i].suffix.indexOf("@slmail.me") !== -1) {
+          return suffixes[i];
+        }
+      }
+      return null;
+    }
+
     function findShortestNonCustomSuffix() {
       var suffixes = (aliasOptions && aliasOptions.suffixes) || [];
       var best = null;
@@ -625,8 +635,12 @@
             finalPrefix = prefix;
           }
         } else {
-          // No custom domain selected
-          suffix = findShortestNonCustomSuffix();
+          // No custom domain selected — use slmail.me for exact, shortest for random
+          if (random) {
+            suffix = findShortestNonCustomSuffix();
+          } else {
+            suffix = findSlmailSuffix() || findShortestNonCustomSuffix();
+          }
           if (!suffix) { showCreateMsg("✗ No suffix available", "#f06060"); return; }
           // Cases 2 & 6: text + shortest non-custom suffix
           finalPrefix = prefix;
