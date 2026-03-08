@@ -1,0 +1,71 @@
+td.note {
+  color: #999;
+  max-width: 300px;
+  position: relative;
+  white-space: normal;
+}
+
+td.note-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.note-text {
+  cursor: pointer;
+  display: inline-block;
+  min-height: 1em;
+  min-width: 20px;
+}
+
+.note-text:hover {
+  color: #ccc;
+}
+
+.note-edit {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+  width: 100%;
+}
+
+.note-input {
+  background: #2a2a3e;
+  border-radius: 3px;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  min-width: 0;
+  padding: 2px 6px;
+}
+
+.note-input:focus {
+  border-color: #7fbbf0;
+  outline: none;
+}
+
+.note-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.save-btn {
+  color: #6bcf6b;
+}
+
+.save-btn:hover {
+  color: #8f8;
+}
+
+.cancel-btn {
+  color: #f06060;
+}
+
+.cancel-btn:hover {
+  color: #f88;
+}

@@ -1,0 +1,59 @@
+.toggle {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 6px;
+  user-select: none;
+}
+
+.toggle input {
+  display: none;
+}
+
+.toggle .slider {
+  background: #f06060;
+  border-radius: 9px;
+  flex-shrink: 0;
+  height: 18px;
+  position: relative;
+  transition: background 0.2s;
+  width: 32px;
+}
+
+.toggle .slider::after {
+  background: #fff;
+  border-radius: 50%;
+  content: "";
+  height: 14px;
+  left: 2px;
+  position: absolute;
+  top: 2px;
+  transition: transform 0.2s;
+  width: 14px;
+}
+
+.toggle input:checked + .slider {
+  background: #6bcf6b;
+}
+
+.toggle input:checked + .slider::after {
+  transform: translateX(14px);
+}
+
+.toggle .toggle-label {
+  font-size: 11px;
+  min-width: 18px;
+}
+
+.toggle input:checked ~ .toggle-label {
+  color: #6bcf6b;
+}
+
+.toggle input:not(:checked) ~ .toggle-label {
+  color: #f06060;
+}
+
+.toggle.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}

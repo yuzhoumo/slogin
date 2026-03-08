@@ -1,0 +1,22 @@
+.actions {
+  text-align: center;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px;
+  vertical-align: middle;
+}
+
+.delete-btn:hover {
+  color: #f06060;
+}
+
+.delete-btn.pin-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}

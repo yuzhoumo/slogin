@@ -1,0 +1,45 @@
+.pin-btn {
+  background: none;
+  border: none;
+  color: #777;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px 0 0;
+  vertical-align: middle;
+}
+
+.pin-btn:hover {
+  color: #ddd;
+}
+
+.pin-btn.pin-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.pin-icon {
+  vertical-align: middle;
+}
+
+/* ===== Pinned Section ===== */
+
+.pinned-section {
+  margin-bottom: 16px;
+}
+
+.pinned-section h2 {
+  color: #999;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.pinned-section table {
+  border-left: 2px solid #7fbbf0;
+}
+
+.pinned-section .pin-btn {
+  color: #7fbbf0;
+}
