@@ -582,14 +582,16 @@
       return null;
     }
 
-    function findSlmailSuffix() {
+    function findDefaultSuffix() {
       var suffixes = (aliasOptions && aliasOptions.suffixes) || [];
+      // Prefer simplelogin.com, fallback to slmail.me, then shortest non-custom
+      var slcom = null, slmail = null;
       for (var i = 0; i < suffixes.length; i++) {
-        if (!suffixes[i].is_custom && suffixes[i].suffix.indexOf("@slmail.me") !== -1) {
-          return suffixes[i];
-        }
+        if (suffixes[i].is_custom) continue;
+        if (suffixes[i].suffix.indexOf("@simplelogin.com") !== -1) slcom = suffixes[i];
+        if (suffixes[i].suffix.indexOf("@slmail.me") !== -1) slmail = suffixes[i];
       }
-      return null;
+      return slcom || slmail || findShortestNonCustomSuffix();
     }
 
     function findShortestNonCustomSuffix() {
@@ -642,7 +644,7 @@
           if (random) {
             suffix = findShortestNonCustomSuffix();
           } else {
-            suffix = findSlmailSuffix() || findShortestNonCustomSuffix();
+            suffix = findDefaultSuffix();
           }
           if (!suffix) { showCreateMsg("✗ No suffix available", "#f06060"); return; }
           // Cases 2 & 6: text + shortest non-custom suffix
