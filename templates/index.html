@@ -92,7 +92,7 @@
     <input type="text" id="search-input" placeholder="Search aliases…" oninput="fuzzyFilter(this.value)">
   </div>
   <div id="pinned-section" class="pinned-section hidden">
-    <table>
+    <table id="pinned-table">
       <colgroup>
         <col style="width: 80px;">
         <col style="width: 35%;">
@@ -101,16 +101,16 @@
       </colgroup>
       <thead>
         <tr>
-          <th data-col="0" onclick="sortTable(0)">Status</th>
-          <th data-col="1" onclick="sortTable(1)">Alias</th>
-          <th data-col="2" onclick="sortTable(2)">Description</th>
-          <th data-col="3" onclick="sortTable(3)">Last Activity</th>
+          <th data-col="0" onclick="sortTable('pinned-table', 0)">Status</th>
+          <th data-col="1" onclick="sortTable('pinned-table', 1)">Alias</th>
+          <th data-col="2" onclick="sortTable('pinned-table', 2)">Description</th>
+          <th data-col="3" onclick="sortTable('pinned-table', 3)">Last Activity</th>
         </tr>
       </thead>
       <tbody id="pinned-body"></tbody>
     </table>
   </div>
-  <table>
+  <table id="main-table">
     <colgroup>
       <col style="width: 80px;">
       <col style="width: 35%;">
@@ -119,10 +119,10 @@
     </colgroup>
     <thead>
       <tr>
-        <th data-col="0" onclick="sortTable(0)">Status</th>
-        <th data-col="1" onclick="sortTable(1)">Alias</th>
-        <th data-col="2" onclick="sortTable(2)">Description</th>
-        <th data-col="3" onclick="sortTable(3)">Last Activity</th>
+        <th data-col="0" onclick="sortTable('main-table', 0)">Status</th>
+        <th data-col="1" onclick="sortTable('main-table', 1)">Alias</th>
+        <th data-col="2" onclick="sortTable('main-table', 2)">Description</th>
+        <th data-col="3" onclick="sortTable('main-table', 3)">Last Activity</th>
       </tr>
     </thead>
     <tbody id="alias-body">
@@ -256,12 +256,12 @@
         if (pinState) {
           // Pin: move to pinned table
           row.setAttribute("data-pinned", "true");
-          insertSorted(pinnedBody, row);
+          insertSorted(pinnedBody, row, "pinned-table");
           pinnedSection.classList.remove("hidden");
         } else {
           // Unpin: move to main table
           row.setAttribute("data-pinned", "false");
-          insertSorted(aliasBody, row);
+          insertSorted(aliasBody, row, "main-table");
           if (!pinnedBody.children.length) pinnedSection.classList.add("hidden");
         }
 
@@ -391,7 +391,10 @@
       }
     }
 
-    var sortState = { col: null, asc: true };
+    var sortStates = {
+      "pinned-table": { col: null, asc: true },
+      "main-table": { col: null, asc: true }
+    };
 
     function sortComparator(colIndex, asc) {
       return function(a, b) {
@@ -409,20 +412,21 @@
       };
     }
 
-    function sortBody(tbody) {
-      if (sortState.col === null) return;
+    function sortBody(tbody, state) {
+      if (state.col === null) return;
       var rows = Array.from(tbody.querySelectorAll("tr:not(#loader)"));
       if (!rows.length) return;
-      rows.sort(sortComparator(sortState.col, sortState.asc));
+      rows.sort(sortComparator(state.col, state.asc));
       rows.forEach(function(row) { tbody.appendChild(row); });
     }
 
-    function insertSorted(tbody, row) {
-      if (sortState.col === null) {
+    function insertSorted(tbody, row, tableId) {
+      var state = sortStates[tableId];
+      if (!state || state.col === null) {
         tbody.appendChild(row);
         return;
       }
-      var cmp = sortComparator(sortState.col, sortState.asc);
+      var cmp = sortComparator(state.col, state.asc);
       var existing = Array.from(tbody.querySelectorAll("tr:not(#loader)"));
       var inserted = false;
       for (var i = 0; i < existing.length; i++) {
@@ -435,26 +439,26 @@
       if (!inserted) tbody.appendChild(row);
     }
 
-    function sortTable(colIndex) {
-      // Toggle direction if same column, otherwise default ascending
-      if (sortState.col === colIndex) {
-        sortState.asc = !sortState.asc;
+    function sortTable(tableId, colIndex) {
+      var state = sortStates[tableId];
+      if (state.col === colIndex) {
+        state.asc = !state.asc;
       } else {
-        sortState.col = colIndex;
-        sortState.asc = true;
+        state.col = colIndex;
+        state.asc = true;
       }
 
-      sortBody(document.getElementById("alias-body"));
-      sortBody(document.getElementById("pinned-body"));
+      var table = document.getElementById(tableId);
+      sortBody(table.querySelector("tbody"), state);
 
-      // Update arrow indicators on all th elements
-      document.querySelectorAll("thead th").forEach(function(th) {
+      // Update arrow indicators for this table only
+      table.querySelectorAll("thead th").forEach(function(th) {
         var existing = th.querySelector(".arrow");
         if (existing) existing.remove();
         if (parseInt(th.getAttribute("data-col")) === colIndex) {
           var arrow = document.createElement("span");
           arrow.className = "arrow";
-          arrow.textContent = sortState.asc ? " ▲" : " ▼";
+          arrow.textContent = state.asc ? " ▲" : " ▼";
           th.appendChild(arrow);
         }
       });
