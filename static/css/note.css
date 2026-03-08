@@ -12,9 +12,8 @@ td.note-disabled {
 
 .note-text {
   cursor: pointer;
-  display: inline-block;
+  display: block;
   min-height: 1em;
-  min-width: 20px;
 }
 
 .note-text:hover {
