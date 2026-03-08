@@ -74,13 +74,14 @@
     .pinned-section table { border-left: 2px solid #7fbbf0; }
     .pinned-section .pin-btn { color: #7fbbf0; }
     .hidden { display: none; }
-    .search-bar { margin-bottom: 12px; }
+    .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .search-bar { flex: 1; }
     #search-input { width: 100%; background: #2a2a3e; border: 1px solid #444; color: #e0e0e0; font-family: inherit; font-size: 13px; padding: 6px 10px; border-radius: 4px; }
     #search-input:focus { outline: none; border-color: #7fbbf0; }
     #search-input::placeholder { color: #666; }
 
     /* Create alias bar */
-    .create-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; justify-content: flex-end; }
+    .create-bar { display: flex; align-items: center; gap: 6px; }
     .create-input { background: #2a2a3e; border: 1px solid #444; color: #e0e0e0; font-family: inherit; font-size: 13px; padding: 4px 8px; border-radius: 3px; width: 180px; }
     .create-input:focus { outline: none; border-color: #7fbbf0; }
     .create-input::placeholder { color: #666; }
@@ -102,18 +103,20 @@
       <button class="refresh" onclick="startStream()">↻ Refresh</button>
     </div>
   </header>
-  <div class="create-bar" id="create-bar">
-    <input type="text" id="create-prefix" placeholder="alias prefix" class="create-input">
-    <span class="create-at">@</span>
-    <select id="create-domain" class="create-select">
-      <option value="">simplelogin (auto)</option>
-    </select>
-    <label class="create-random-label"><input type="checkbox" id="create-random" checked> random</label>
-    <button class="create-btn" onclick="createAlias()" id="create-btn">+ Create</button>
-    <span id="create-msg" class="create-msg"></span>
-  </div>
-  <div class="search-bar">
-    <input type="text" id="search-input" placeholder="Search aliases…" oninput="fuzzyFilter(this.value)">
+  <div class="toolbar">
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="Search aliases…" oninput="fuzzyFilter(this.value)">
+    </div>
+    <div class="create-bar" id="create-bar">
+      <input type="text" id="create-prefix" placeholder="alias prefix" class="create-input">
+      <span class="create-at">@</span>
+      <select id="create-domain" class="create-select">
+        <option value="">simplelogin (auto)</option>
+      </select>
+      <label class="create-random-label"><input type="checkbox" id="create-random" checked> random</label>
+      <button class="create-btn" onclick="createAlias()" id="create-btn">+ Create</button>
+      <span id="create-msg" class="create-msg"></span>
+    </div>
   </div>
   <div id="pinned-section" class="pinned-section hidden">
     <table id="pinned-table">
