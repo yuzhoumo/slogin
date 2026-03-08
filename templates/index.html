@@ -14,7 +14,9 @@
     .refresh { background: none; border: 1px solid #444; color: #aaa; padding: 3px 10px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; }
     .refresh:hover { border-color: #888; color: #ddd; }
     table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; color: #777; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 8px; border-bottom: 1px solid #333; }
+    th { text-align: left; color: #777; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 8px; border-bottom: 1px solid #333; cursor: pointer; user-select: none; }
+    th:hover { color: #bbb; }
+    th .arrow { font-size: 10px; margin-left: 4px; }
     td { padding: 5px 8px; border-bottom: 1px solid #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     td.note { white-space: normal; max-width: 300px; color: #999; }
     tr:hover td { background: #222244; }
@@ -30,6 +32,32 @@
     .status-msg { color: #f06060; font-size: 12px; }
     tr.new { animation: fadeIn 0.2s ease-in; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Toggle switch */
+    .toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+    .toggle input { display: none; }
+    .toggle .slider { position: relative; width: 32px; height: 18px; background: #f06060; border-radius: 9px; transition: background 0.2s; flex-shrink: 0; }
+    .toggle .slider::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
+    .toggle input:checked + .slider { background: #6bcf6b; }
+    .toggle input:checked + .slider::after { transform: translateX(14px); }
+    .toggle .toggle-label { font-size: 11px; min-width: 18px; }
+    .toggle input:checked ~ .toggle-label { color: #6bcf6b; }
+    .toggle input:not(:checked) ~ .toggle-label { color: #f06060; }
+    .toggle.disabled { opacity: 0.4; pointer-events: none; }
+
+    /* Inline note editing */
+    td.note { position: relative; }
+    td.note-disabled { opacity: 0.4; pointer-events: none; }
+    .note-text { cursor: pointer; display: inline-block; min-width: 20px; min-height: 1em; }
+    .note-text:hover { color: #ccc; }
+    .note-edit { display: inline-flex; align-items: center; gap: 4px; width: 100%; }
+    .note-input { background: #2a2a3e; border: 1px solid #555; color: #e0e0e0; font-family: inherit; font-size: 13px; padding: 2px 6px; border-radius: 3px; flex: 1; min-width: 0; }
+    .note-input:focus { outline: none; border-color: #7fbbf0; }
+    .note-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 4px; line-height: 1; }
+    .save-btn { color: #6bcf6b; }
+    .save-btn:hover { color: #8f8; }
+    .cancel-btn { color: #f06060; }
+    .cancel-btn:hover { color: #f88; }
   </style>
 </head>
 <body>
@@ -43,10 +71,10 @@
   <table>
     <thead>
       <tr>
-        <th>Status</th>
-        <th>Alias</th>
-        <th>Description</th>
-        <th>Last Activity</th>
+        <th data-col="0" onclick="sortTable(0)">Status</th>
+        <th data-col="1" onclick="sortTable(1)">Alias</th>
+        <th data-col="2" onclick="sortTable(2)">Description</th>
+        <th data-col="3" onclick="sortTable(3)">Last Activity</th>
       </tr>
     </thead>
     <tbody id="alias-body">
@@ -90,6 +118,14 @@
         document.querySelector(".count").textContent = "(" + e.data + ")";
         statusMsg.textContent = "";
         source.close();
+        // Enable all toggle switches now that loading is complete
+        document.querySelectorAll(".toggle.disabled").forEach(function(el) {
+          el.classList.remove("disabled");
+        });
+        // Enable inline editing on all note cells
+        document.querySelectorAll("td.note-disabled").forEach(function(el) {
+          el.classList.remove("note-disabled");
+        });
       });
 
       source.onerror = function() {
@@ -101,6 +137,142 @@
         }
       };
     }
+
+    function toggleAlias(el, aliasId) {
+      if (el.classList.contains("disabled")) return;
+      el.classList.add("disabled");
+      var checkbox = el.querySelector("input");
+      var label = el.querySelector(".toggle-label");
+      var wasChecked = checkbox.checked;
+
+      fetch("/api/toggle/" + aliasId, { method: "POST" })
+        .then(function(r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        })
+        .then(function(data) {
+          if (data.error) throw new Error(data.error);
+          checkbox.checked = data.enabled;
+          label.textContent = data.enabled ? "on" : "off";
+        })
+        .catch(function() {
+          checkbox.checked = wasChecked;
+          label.textContent = wasChecked ? "on" : "off";
+          var statusMsg = document.getElementById("status-msg");
+          statusMsg.style.color = "#f06060";
+          statusMsg.textContent = "✗ Toggle failed";
+          setTimeout(function() { statusMsg.textContent = ""; }, 3000);
+        })
+        .finally(function() {
+          el.classList.remove("disabled");
+        });
+    }
+
+    function closeAllEdits() {
+      document.querySelectorAll(".note-edit").forEach(function(editSpan) {
+        if (editSpan.style.display !== "none") {
+          finishEdit(editSpan.closest("td.note"));
+        }
+      });
+    }
+
+    function startEdit(el) {
+      closeAllEdits();
+      var td = el.closest("td.note");
+      td.querySelector(".note-text").style.display = "none";
+      var editSpan = td.querySelector(".note-edit");
+      editSpan.style.display = "";
+      var input = td.querySelector(".note-input");
+      input.value = td.getAttribute("data-note");
+      input.focus();
+      input.select();
+    }
+
+    function saveNote(el) {
+      var td = el.closest("td.note");
+      var aliasId = td.getAttribute("data-alias-id");
+      var input = td.querySelector(".note-input");
+      var newNote = input.value;
+
+      fetch("/api/alias/" + aliasId + "/note", {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({note: newNote})
+      }).then(function(resp) {
+        if (!resp.ok) throw new Error("Save failed");
+        td.setAttribute("data-note", newNote);
+        td.querySelector(".note-text").textContent = newNote;
+        finishEdit(td);
+      }).catch(function() {
+        input.style.borderColor = "#f06060";
+        setTimeout(function() { input.style.borderColor = ""; }, 1500);
+      });
+    }
+
+    function cancelEdit(el) {
+      var td = el.closest("td.note");
+      finishEdit(td);
+    }
+
+    function finishEdit(td) {
+      td.querySelector(".note-edit").style.display = "none";
+      td.querySelector(".note-text").style.display = "";
+    }
+
+    // Click outside any open edit box cancels it
+    document.addEventListener("mousedown", function(e) {
+      if (!e.target.closest(".note-edit") && !e.target.classList.contains("note-text")) {
+        closeAllEdits();
+      }
+    });
+
+    var sortState = { col: null, asc: true };
+
+    function sortTable(colIndex) {
+      var body = document.getElementById("alias-body");
+      var rows = Array.from(body.querySelectorAll("tr:not(#loader)"));
+      if (!rows.length) return;
+
+      // Toggle direction if same column, otherwise default ascending
+      if (sortState.col === colIndex) {
+        sortState.asc = !sortState.asc;
+      } else {
+        sortState.col = colIndex;
+        sortState.asc = true;
+      }
+
+      rows.sort(function(a, b) {
+        var aText = (a.children[colIndex] ? a.children[colIndex].textContent : "").trim().toLowerCase();
+        var bText = (b.children[colIndex] ? b.children[colIndex].textContent : "").trim().toLowerCase();
+
+        if (colIndex === 3) {
+          // Last Activity: treat "—" as oldest
+          var aVal = (aText === "—" || aText === "") ? "" : aText;
+          var bVal = (bText === "—" || bText === "") ? "" : bText;
+          if (aVal === "" && bVal === "") return 0;
+          if (aVal === "") return sortState.asc ? -1 : 1;
+          if (bVal === "") return sortState.asc ? 1 : -1;
+          return sortState.asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+
+        return sortState.asc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+      });
+
+      rows.forEach(function(row) { body.appendChild(row); });
+
+      // Update arrow indicators
+      document.querySelectorAll("thead th").forEach(function(th) {
+        var existing = th.querySelector(".arrow");
+        if (existing) existing.remove();
+        if (parseInt(th.getAttribute("data-col")) === colIndex) {
+          var arrow = document.createElement("span");
+          arrow.className = "arrow";
+          arrow.textContent = sortState.asc ? " ▲" : " ▼";
+          th.appendChild(arrow);
+        }
+      });
+    }
+
 
     startStream();
   </script>

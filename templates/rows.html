@@ -1,8 +1,22 @@
 {% for a in aliases %}
 <tr>
-  <td><span class="{{ 'on' if a.enabled else 'off' }}">{{ "✓ on" if a.enabled else "✗ off" }}</span></td>
+  <td>
+    <label class="toggle disabled" data-alias-id="{{ a.id }}" onclick="toggleAlias(this, {{ a.id }})">
+      <input type="checkbox" {{ 'checked' if a.enabled }}>
+      <span class="slider"></span>
+      <span class="toggle-label">{{ "on" if a.enabled else "off" }}</span>
+    </label>
+  </td>
   <td class="email">{{ a.email }}</td>
-  <td class="note">{{ a.note }}</td>
+  <td class="note note-disabled" data-alias-id="{{ a.id }}" data-note="{{ a.note }}">
+    <span class="note-text" onclick="startEdit(this)">{{ a.note }}</span>
+    <span class="note-edit" style="display:none">
+      <input type="text" class="note-input" value="{{ a.note }}"
+             onkeydown="if(event.key==='Enter')saveNote(this);if(event.key==='Escape')cancelEdit(this);">
+      <button class="note-btn save-btn" onclick="saveNote(this)" title="Save">✓</button>
+      <button class="note-btn cancel-btn" onclick="cancelEdit(this)" title="Cancel">✗</button>
+    </span>
+  </td>
   <td class="ts">{{ a.last_activity }}</td>
 </tr>
 {% endfor %}

@@ -6,7 +6,7 @@ import threading
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
-from flask import Flask, make_response, render_template, Response, request as flask_request
+from flask import Flask, make_response, render_template, Response, request as flask_request, jsonify
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -58,6 +58,25 @@ def api_get(path, params=None):
         f"{API_BASE}{path}",
         headers={"Authentication": API_KEY},
         params=params,
+    )
+
+
+def api_post(path):
+    """Rate-limited POST request to the SimpleLogin API."""
+    rate_limiter.acquire()
+    return requests.post(
+        f"{API_BASE}{path}",
+        headers={"Authentication": API_KEY},
+    )
+
+
+def api_patch(path, json_body=None):
+    """Rate-limited PATCH request to the SimpleLogin API."""
+    rate_limiter.acquire()
+    return requests.patch(
+        f"{API_BASE}{path}",
+        headers={"Authentication": API_KEY},
+        json=json_body,
     )
 
 
@@ -143,6 +162,7 @@ def format_rows(aliases):
         last_activity = a.get("latest_activity")
         last_ts = last_activity["timestamp"] if last_activity else None
         rows.append({
+            "id": a["id"],
             "email": a["email"],
             "enabled": a["enabled"],
             "note": a.get("note") or "",
@@ -256,6 +276,28 @@ def aliases_partial():
     resp = make_response(html)
     resp.headers["HX-Trigger"] = '{"updateCount": ' + str(len(rows)) + '}'
     return resp
+
+
+@app.route("/api/toggle/<int:alias_id>", methods=["POST"])
+def toggle_alias(alias_id):
+    """Proxy toggle request to SimpleLogin API."""
+    log.info("POST /api/toggle/%d", alias_id)
+    try:
+        resp = api_post(f"/api/aliases/{alias_id}/toggle")
+        resp.raise_for_status()
+        return jsonify(resp.json())
+    except Exception as e:
+        log.error("toggle failed for alias %d: %s", alias_id, e)
+        return jsonify({"error": str(e)}), 502
+
+
+@app.route("/api/alias/<int:alias_id>/note", methods=["PATCH"])
+def update_alias_note(alias_id):
+    """Update the note/description of an alias."""
+    data = flask_request.get_json(force=True)
+    note = data.get("note", "")
+    resp = api_patch(f"/api/aliases/{alias_id}", json_body={"note": note})
+    return (resp.json(), resp.status_code)
 
 
 if __name__ == "__main__":
