@@ -30,23 +30,30 @@ export async function loadAliasOptions() {
     const select = /** @type {HTMLSelectElement} */ (
       document.getElementById("create-domain")
     );
-    select.innerHTML = '<option value="">simplelogin (default)</option>';
+    select.innerHTML = "";
 
-    /** @type {Record<string, AliasSuffix>} */
-    const customDomains = {};
+    /** @type {Set<string>} */
+    const seen = new Set();
 
-    for (const s of aliasOptions.suffixes ?? []) {
-      if (s.is_custom) {
-        const domain = s.suffix.split("@")[1];
-        if (!customDomains[domain]) {
-          customDomains[domain] = s;
-          const opt = document.createElement("option");
-          opt.value = domain;
-          opt.textContent = domain;
-          select.appendChild(opt);
-        }
-      }
+    const standardGroup = document.createElement("optgroup");
+    standardGroup.label = "SimpleLogin Domains";
+    const customGroup = document.createElement("optgroup");
+    customGroup.label = "Custom Domains";
+
+    for (let i = 0; i < (aliasOptions.suffixes ?? []).length; i++) {
+      const s = aliasOptions.suffixes[i];
+      const domain = s.suffix.split("@")[1];
+      if (seen.has(domain)) continue;
+      seen.add(domain);
+
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = domain;
+      (s.is_custom ? customGroup : standardGroup).appendChild(opt);
     }
+
+    if (standardGroup.children.length) select.appendChild(standardGroup);
+    if (customGroup.children.length) select.appendChild(customGroup);
 
     /** @type {HTMLButtonElement} */ (
       document.getElementById("create-btn")
@@ -66,47 +73,6 @@ function randAlphanumeric(length) {
   return Array.from({ length }, () =>
     chars.charAt(Math.floor(Math.random() * chars.length))
   ).join("");
-}
-
-/**
- * Finds a custom suffix matching the given domain.
- * @param {string} domain - Domain to match (e.g. "example.com")
- * @returns {AliasSuffix | undefined}
- */
-function findSuffix(domain) {
-  return (aliasOptions?.suffixes ?? []).find(
-    (s) => s.is_custom && s.suffix.split("@")[1] === domain
-  );
-}
-
-/**
- * Finds the shortest non-custom suffix available.
- * @returns {AliasSuffix | undefined}
- */
-function findShortestNonCustomSuffix() {
-  const suffixes = (aliasOptions?.suffixes ?? []).filter((s) => !s.is_custom);
-  if (!suffixes.length) return undefined;
-
-  return suffixes.reduce((shortest, s) =>
-    s.suffix.length < shortest.suffix.length ? s : shortest
-  );
-}
-
-/**
- * Finds the best default (non-custom) suffix, preferring simplelogin.com.
- * @returns {AliasSuffix | undefined}
- */
-function findDefaultSuffix() {
-  const suffixes = aliasOptions?.suffixes ?? [];
-
-  const slcom = suffixes.find(
-    (s) => !s.is_custom && s.suffix.includes("@simplelogin.com")
-  );
-  const slmail = suffixes.find(
-    (s) => !s.is_custom && s.suffix.includes("@slmail.me")
-  );
-
-  return slcom ?? slmail ?? findShortestNonCustomSuffix();
 }
 
 /**
@@ -147,19 +113,21 @@ export async function createAlias() {
     return;
   }
 
+  const suffixIdx = parseInt(domain, 10);
+  const suffix = aliasOptions.suffixes[suffixIdx];
+  if (!suffix) {
+    showToast("Cannot create alias: no domain suffix available", "error");
+    return;
+  }
+
   /** @type {Record<string, unknown>} */
   let body;
 
-  if (random && !domain) {
-    // Random + auto domain: use SimpleLogin's default random generator
+  if (random && !suffix.is_custom) {
+    // Random + non-custom domain: use SimpleLogin's default random generator
     body = { random_uuid: true };
-  } else if (random && domain) {
+  } else if (random) {
     // Random + custom domain: generate 8-char random prefix
-    const suffix = findSuffix(domain);
-    if (!suffix) {
-      showToast("Cannot create alias: no suffix found for selected domain", "error");
-      return;
-    }
     body = {
       prefix: randAlphanumeric(8),
       signed_suffix: suffix.signed_suffix,
@@ -167,11 +135,6 @@ export async function createAlias() {
     };
   } else {
     // Not random: use the provided prefix
-    const suffix = domain ? findSuffix(domain) : findDefaultSuffix();
-    if (!suffix) {
-      showToast("Cannot create alias: no domain suffix available", "error");
-      return;
-    }
     body = {
       prefix,
       signed_suffix: suffix.signed_suffix,
