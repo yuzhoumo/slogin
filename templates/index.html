@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SimpleLogin Aliases</title>
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; color: #e0e0e0; background: #1a1a2e; padding: 20px; }
@@ -71,6 +72,10 @@
     .pinned-section table { border-left: 2px solid #7fbbf0; }
     .pinned-section .pin-btn { color: #7fbbf0; }
     .hidden { display: none; }
+    .search-bar { margin-bottom: 12px; }
+    #search-input { width: 100%; background: #2a2a3e; border: 1px solid #444; color: #e0e0e0; font-family: inherit; font-size: 13px; padding: 6px 10px; border-radius: 4px; }
+    #search-input:focus { outline: none; border-color: #7fbbf0; }
+    #search-input::placeholder { color: #666; }
   </style>
 </head>
 <body>
@@ -81,6 +86,9 @@
       <button class="refresh" onclick="startStream()">↻ Refresh</button>
     </div>
   </header>
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="Search aliases…" oninput="fuzzyFilter(this.value)">
+  </div>
   <div id="pinned-section" class="pinned-section hidden">
     <h2>📌 Pinned</h2>
     <table>
@@ -179,6 +187,9 @@
         document.querySelectorAll(".pin-btn.pin-disabled").forEach(function(el) {
           el.classList.remove("pin-disabled");
         });
+        // Reset fuzzy search state
+        document.getElementById("search-input").value = "";
+        fuseInstance = null;
       });
 
       source.onerror = function() {
@@ -322,6 +333,58 @@
         closeAllEdits();
       }
     });
+
+    var fuseInstance = null;
+
+    function buildFuseIndex() {
+      var allRows = Array.from(document.querySelectorAll("#pinned-body tr, #alias-body tr"));
+      var items = allRows.map(function(row) {
+        var emailTd = row.querySelector("td.email");
+        var noteTd = row.querySelector("td.note");
+        return {
+          email: emailTd ? emailTd.textContent.trim() : "",
+          note: noteTd ? (noteTd.getAttribute("data-note") || noteTd.textContent.trim()) : "",
+          row: row
+        };
+      });
+      fuseInstance = new Fuse(items, {
+        keys: ["email", "note"],
+        threshold: 0.4,
+        ignoreLocation: true
+      });
+      return items;
+    }
+
+    function fuzzyFilter(query) {
+      var allRows = Array.from(document.querySelectorAll("#pinned-body tr, #alias-body tr"));
+
+      if (!query || !query.trim()) {
+        allRows.forEach(function(row) { row.style.display = ""; });
+        var pinnedBody = document.getElementById("pinned-body");
+        var pinnedSection = document.getElementById("pinned-section");
+        if (pinnedBody.children.length > 0) {
+          pinnedSection.classList.remove("hidden");
+        }
+        return;
+      }
+
+      var items = buildFuseIndex();
+      var results = fuseInstance.search(query);
+      var matchedRows = new Set(results.map(function(r) { return r.item.row; }));
+
+      allRows.forEach(function(row) {
+        row.style.display = matchedRows.has(row) ? "" : "none";
+      });
+
+      var pinnedBody = document.getElementById("pinned-body");
+      var pinnedSection = document.getElementById("pinned-section");
+      var hasVisiblePinned = Array.from(pinnedBody.children).some(function(r) { return r.style.display !== "none"; });
+      if (hasVisiblePinned) {
+        pinnedSection.classList.remove("hidden");
+      } else {
+        pinnedSection.classList.add("hidden");
+      }
+    }
 
     var sortState = { col: null, asc: true };
 
