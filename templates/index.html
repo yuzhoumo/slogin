@@ -13,7 +13,7 @@
     .count { color: #888; font-size: 12px; }
     .refresh { background: none; border: 1px solid #444; color: #aaa; padding: 3px 10px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; }
     .refresh:hover { border-color: #888; color: #ddd; }
-    table { width: 100%; border-collapse: collapse; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     th { text-align: left; color: #777; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 8px; border-bottom: 1px solid #333; cursor: pointer; user-select: none; }
     th:hover { color: #bbb; }
     th .arrow { font-size: 10px; margin-left: 4px; }
@@ -59,10 +59,11 @@
     .cancel-btn { color: #f06060; }
     .cancel-btn:hover { color: #f88; }
     /* Pin button */
-    .pin-btn { background: none; border: none; cursor: pointer; color: #777; padding: 0 4px 0 0; vertical-align: middle; line-height: 1; }
-    .pin-btn:hover { color: #ddd; }
+    .pin-btn { background: none; border: none; cursor: pointer; padding: 0 4px 0 0; vertical-align: middle; line-height: 1; position: relative; display: inline-block; }
+    .pin-btn:hover { opacity: 0.8; }
     .pin-btn.pin-disabled { opacity: 0.4; pointer-events: none; }
-    .pin-icon { vertical-align: middle; }
+    .pin-btn.pinned::after { content: ""; position: absolute; top: 50%; left: 50%; width: 120%; height: 2px; background: #f06060; transform: translate(-50%, -50%) rotate(-45deg); border-radius: 1px; }
+    .pin-icon { vertical-align: middle; font-size: 14px; }
 
     /* Pinned section */
     .pinned-section { margin-bottom: 16px; }
@@ -83,6 +84,12 @@
   <div id="pinned-section" class="pinned-section hidden">
     <h2>📌 Pinned</h2>
     <table>
+      <colgroup>
+        <col style="width: 80px;">
+        <col style="width: 35%;">
+        <col>
+        <col style="width: 140px;">
+      </colgroup>
       <thead>
         <tr>
           <th>Status</th>
@@ -95,6 +102,12 @@
     </table>
   </div>
   <table>
+    <colgroup>
+      <col style="width: 80px;">
+      <col style="width: 35%;">
+      <col>
+      <col style="width: 140px;">
+    </colgroup>
     <thead>
       <tr>
         <th data-col="0" onclick="sortTable(0)">Status</th>
@@ -237,21 +250,10 @@
         // Update the button's onclick and icon
         btn.setAttribute("onclick", "togglePin(this, " + aliasId + ", " + !pinState + ")");
         btn.title = pinState ? "Unpin" : "Pin";
-        var svg = btn.querySelector("svg");
-        var line = svg.querySelector("line");
         if (pinState) {
-          // Just pinned — add strikethrough line for "unpin" icon
-          if (!line) {
-            var l = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            l.setAttribute("x1", "2"); l.setAttribute("y1", "14");
-            l.setAttribute("x2", "14"); l.setAttribute("y2", "2");
-            l.setAttribute("stroke", "currentColor"); l.setAttribute("stroke-width", "1.2");
-            l.setAttribute("stroke-linecap", "round");
-            svg.appendChild(l);
-          }
+          btn.classList.add("pinned");
         } else {
-          // Just unpinned — remove strikethrough
-          if (line) line.remove();
+          btn.classList.remove("pinned");
         }
       }).catch(function() {
         var statusMsg = document.getElementById("status-msg");
