@@ -101,10 +101,10 @@
       </colgroup>
       <thead>
         <tr>
-          <th>Status</th>
-          <th>Alias</th>
-          <th>Description</th>
-          <th>Last Activity</th>
+          <th data-col="0" onclick="sortTable(0)">Status</th>
+          <th data-col="1" onclick="sortTable(1)">Alias</th>
+          <th data-col="2" onclick="sortTable(2)">Description</th>
+          <th data-col="3" onclick="sortTable(3)">Last Activity</th>
         </tr>
       </thead>
       <tbody id="pinned-body"></tbody>
@@ -256,12 +256,12 @@
         if (pinState) {
           // Pin: move to pinned table
           row.setAttribute("data-pinned", "true");
-          pinnedBody.appendChild(row);
+          insertSorted(pinnedBody, row);
           pinnedSection.classList.remove("hidden");
         } else {
           // Unpin: move to main table
           row.setAttribute("data-pinned", "false");
-          aliasBody.appendChild(row);
+          insertSorted(aliasBody, row);
           if (!pinnedBody.children.length) pinnedSection.classList.add("hidden");
         }
 
@@ -393,11 +393,49 @@
 
     var sortState = { col: null, asc: true };
 
-    function sortTable(colIndex) {
-      var body = document.getElementById("alias-body");
-      var rows = Array.from(body.querySelectorAll("tr:not(#loader)"));
-      if (!rows.length) return;
+    function sortComparator(colIndex, asc) {
+      return function(a, b) {
+        var aText = (a.children[colIndex] ? a.children[colIndex].textContent : "").trim().toLowerCase();
+        var bText = (b.children[colIndex] ? b.children[colIndex].textContent : "").trim().toLowerCase();
+        if (colIndex === 3) {
+          var aVal = (aText === "—" || aText === "") ? "" : aText;
+          var bVal = (bText === "—" || bText === "") ? "" : bText;
+          if (aVal === "" && bVal === "") return 0;
+          if (aVal === "") return asc ? -1 : 1;
+          if (bVal === "") return asc ? 1 : -1;
+          return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+        return asc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+      };
+    }
 
+    function sortBody(tbody) {
+      if (sortState.col === null) return;
+      var rows = Array.from(tbody.querySelectorAll("tr:not(#loader)"));
+      if (!rows.length) return;
+      rows.sort(sortComparator(sortState.col, sortState.asc));
+      rows.forEach(function(row) { tbody.appendChild(row); });
+    }
+
+    function insertSorted(tbody, row) {
+      if (sortState.col === null) {
+        tbody.appendChild(row);
+        return;
+      }
+      var cmp = sortComparator(sortState.col, sortState.asc);
+      var existing = Array.from(tbody.querySelectorAll("tr:not(#loader)"));
+      var inserted = false;
+      for (var i = 0; i < existing.length; i++) {
+        if (cmp(row, existing[i]) < 0) {
+          tbody.insertBefore(row, existing[i]);
+          inserted = true;
+          break;
+        }
+      }
+      if (!inserted) tbody.appendChild(row);
+    }
+
+    function sortTable(colIndex) {
       // Toggle direction if same column, otherwise default ascending
       if (sortState.col === colIndex) {
         sortState.asc = !sortState.asc;
@@ -406,26 +444,10 @@
         sortState.asc = true;
       }
 
-      rows.sort(function(a, b) {
-        var aText = (a.children[colIndex] ? a.children[colIndex].textContent : "").trim().toLowerCase();
-        var bText = (b.children[colIndex] ? b.children[colIndex].textContent : "").trim().toLowerCase();
+      sortBody(document.getElementById("alias-body"));
+      sortBody(document.getElementById("pinned-body"));
 
-        if (colIndex === 3) {
-          // Last Activity: treat "—" as oldest
-          var aVal = (aText === "—" || aText === "") ? "" : aText;
-          var bVal = (bText === "—" || bText === "") ? "" : bText;
-          if (aVal === "" && bVal === "") return 0;
-          if (aVal === "") return sortState.asc ? -1 : 1;
-          if (bVal === "") return sortState.asc ? 1 : -1;
-          return sortState.asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-        }
-
-        return sortState.asc ? aText.localeCompare(bText) : bText.localeCompare(aText);
-      });
-
-      rows.forEach(function(row) { body.appendChild(row); });
-
-      // Update arrow indicators
+      // Update arrow indicators on all th elements
       document.querySelectorAll("thead th").forEach(function(th) {
         var existing = th.querySelector(".arrow");
         if (existing) existing.remove();
