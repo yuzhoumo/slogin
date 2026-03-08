@@ -30,7 +30,7 @@ export async function loadAliasOptions() {
     const select = /** @type {HTMLSelectElement} */ (
       document.getElementById("create-domain")
     );
-    select.innerHTML = '<option value="">simplelogin (auto)</option>';
+    select.innerHTML = '<option value="">simplelogin (default)</option>';
 
     /** @type {Record<string, AliasSuffix>} */
     const customDomains = {};
@@ -110,6 +110,20 @@ function findDefaultSuffix() {
 }
 
 /**
+ * Toggles the prefix input based on the random checkbox state.
+ */
+function syncPrefixState() {
+  const random = /** @type {HTMLInputElement} */ (
+    document.getElementById("create-random")
+  ).checked;
+  const prefixInput = /** @type {HTMLInputElement} */ (
+    document.getElementById("create-prefix")
+  );
+  prefixInput.disabled = random;
+  if (random) prefixInput.value = "";
+}
+
+/**
  * Creates a new alias via the API using the current form inputs.
  */
 export async function createAlias() {
@@ -128,7 +142,7 @@ export async function createAlias() {
     document.getElementById("create-btn")
   );
 
-  if (!prefix && !random) {
+  if (!random && !prefix) {
     showToast("Cannot create alias: enter a prefix or enable random", "error");
     return;
   }
@@ -136,42 +150,30 @@ export async function createAlias() {
   /** @type {Record<string, unknown>} */
   let body;
 
-  if (random && !prefix && !domain) {
+  if (random && !domain) {
+    // Random + auto domain: use SimpleLogin's default random generator
     body = { random_uuid: true };
-  } else {
-    /** @type {AliasSuffix | undefined} */
-    let suffix;
-    /** @type {string} */
-    let finalPrefix;
-
-    if (domain) {
-      suffix = findSuffix(domain);
-      if (!suffix) {
-        showToast(
-          "Cannot create alias: no suffix found for selected domain",
-          "error"
-        );
-        return;
-      }
-
-      if (random && prefix) {
-        finalPrefix = `${prefix}.${randAlphanumeric(8)}`;
-      } else if (random) {
-        finalPrefix = randAlphanumeric(8);
-      } else {
-        finalPrefix = prefix;
-      }
-    } else {
-      suffix = random ? findShortestNonCustomSuffix() : findDefaultSuffix();
-      if (!suffix) {
-        showToast("Cannot create alias: no domain suffix available", "error");
-        return;
-      }
-      finalPrefix = prefix;
+  } else if (random && domain) {
+    // Random + custom domain: generate 8-char random prefix
+    const suffix = findSuffix(domain);
+    if (!suffix) {
+      showToast("Cannot create alias: no suffix found for selected domain", "error");
+      return;
     }
-
     body = {
-      prefix: finalPrefix,
+      prefix: randAlphanumeric(8),
+      signed_suffix: suffix.signed_suffix,
+      mailbox_ids: [aliasOptions.default_mailbox_id],
+    };
+  } else {
+    // Not random: use the provided prefix
+    const suffix = domain ? findSuffix(domain) : findDefaultSuffix();
+    if (!suffix) {
+      showToast("Cannot create alias: no domain suffix available", "error");
+      return;
+    }
+    body = {
+      prefix,
       signed_suffix: suffix.signed_suffix,
       mailbox_ids: [aliasOptions.default_mailbox_id],
     };
@@ -205,10 +207,11 @@ export async function createAlias() {
 }
 
 /**
- * Registers the Enter-key shortcut on the prefix input.
+ * Registers event listeners for alias creation controls.
  */
 export function initCreateListeners() {
   document.getElementById("create-prefix").addEventListener("keydown", (e) => {
     if (e.key === "Enter") createAlias();
   });
+  document.getElementById("create-random").addEventListener("change", syncPrefixState);
 }

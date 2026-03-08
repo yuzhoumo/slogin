@@ -49,3 +49,9 @@ All settings are optional environment variables (or `.env` entries):
 |---------------------------|------------------------------|---------------------|
 | `SLOGIN_API_KEY`          | *(required)*                 | SimpleLogin API key |
 | `SLOGIN_API_BASE`         | `https://app.simplelogin.io` | API base URL        |
+
+The `random` option for alias creation will generate a random 8-character
+alphanumeric prefix for custom domains. For non-custom domains, this option
+will use the alias defaults configured in SimpleLogin:
+
+![alias-options-screenshot](docs/alias-options.png)

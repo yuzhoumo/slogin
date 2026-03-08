@@ -16,12 +16,15 @@
     <h1><a href="https://app.simplelogin.io/dashboard/setting" target="_blank" rel="noopener" class="header-link">SimpleLogin</a> <span class="count">({{ total }} aliases)</span></h1>
     <div class="header-right">
       <div class="create-bar" id="create-bar">
-        <input type="text" id="create-prefix" placeholder="alias prefix" class="create-input">
+        <div class="create-input-group">
+          <input type="text" id="create-prefix" placeholder="alias prefix" class="create-input">
+          <div class="create-input-sep"></div>
+          <label class="create-random-label"><input type="checkbox" id="create-random"> random</label>
+        </div>
         <span class="create-at">@</span>
         <select id="create-domain" class="create-select">
-          <option value="">simplelogin (auto)</option>
+          <option value="">simplelogin (default)</option>
         </select>
-        <label class="create-random-label"><input type="checkbox" id="create-random" checked> random</label>
         <button class="create-btn" onclick="createAlias()" id="create-btn">+ Create</button>
       </div>
       <button class="refresh" onclick="startStream()">↻ Refresh</button>

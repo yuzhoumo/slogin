@@ -4,24 +4,46 @@
   gap: 6px;
 }
 
-.create-input {
+.create-input-group {
+  align-items: center;
   background: #2a2a3e;
   border-radius: 3px;
   border: 1px solid #444;
+  display: flex;
+}
+
+.create-input-group:focus-within {
+  border-color: #7fbbf0;
+}
+
+.create-input {
+  background: transparent;
+  border: none;
   color: #e0e0e0;
   font-family: inherit;
   font-size: 13px;
   padding: 4px 8px;
-  width: 180px;
+  width: 150px;
 }
 
 .create-input:focus {
-  border-color: #7fbbf0;
   outline: none;
+}
+
+.create-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .create-input::placeholder {
   color: #666;
+}
+
+.create-input-sep {
+  background: #444;
+  flex-shrink: 0;
+  height: 18px;
+  width: 1px;
 }
 
 .create-at {
@@ -49,8 +71,10 @@
   color: #aaa;
   cursor: pointer;
   display: flex;
+  flex-shrink: 0;
   font-size: 12px;
   gap: 4px;
+  padding: 0 6px;
   user-select: none;
   white-space: nowrap;
 }
