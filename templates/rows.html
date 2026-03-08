@@ -26,6 +26,6 @@
       <button class="note-btn cancel-btn" onclick="cancelEdit(this)" title="Cancel">✗</button>
     </span>
   </td>
-  <td class="ts">{{ a.last_activity }}</td>
+  <td class="ts" data-ts="{{ a.last_activity_ts or '' }}">{{ a.last_activity }}</td>
 </tr>
 {% endfor %}

@@ -136,6 +136,29 @@
     </tbody>
   </table>
   <script>
+    // Detect local timezone abbreviation
+    var localTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    var tzAbbr = new Date().toLocaleTimeString("en-US", {timeZoneName: "short"}).split(" ").pop();
+    // Update all "Last Activity" headers with timezone
+    document.querySelectorAll("th[data-col='3']").forEach(function(th) {
+      th.childNodes[0].textContent = "Last Activity (" + tzAbbr + ")";
+    });
+
+    function localizeTimestamps(container) {
+      container.querySelectorAll("td.ts[data-ts]").forEach(function(td) {
+        var ts = td.getAttribute("data-ts");
+        if (!ts || td.getAttribute("data-localized")) return;
+        var d = new Date(parseInt(ts) * 1000);
+        var y = d.getFullYear();
+        var mo = String(d.getMonth() + 1).padStart(2, "0");
+        var da = String(d.getDate()).padStart(2, "0");
+        var h = String(d.getHours()).padStart(2, "0");
+        var mi = String(d.getMinutes()).padStart(2, "0");
+        td.textContent = y + "-" + mo + "-" + da + " " + h + ":" + mi;
+        td.setAttribute("data-localized", "1");
+      });
+    }
+
     function startStream() {
       var body = document.getElementById("alias-body");
       var pinnedBody = document.getElementById("pinned-body");
@@ -160,6 +183,7 @@
       source.addEventListener("pinned", function(e) {
         gotData = true;
         pinnedBody.insertAdjacentHTML("beforeend", e.data);
+        localizeTimestamps(pinnedBody);
         pinnedSection.classList.remove("hidden");
       });
 
@@ -170,6 +194,7 @@
           first = false;
         }
         body.insertAdjacentHTML("beforeend", e.data);
+        localizeTimestamps(body);
       });
 
       source.addEventListener("done", function(e) {

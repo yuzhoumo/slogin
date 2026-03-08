@@ -168,6 +168,7 @@ def format_rows(aliases):
             "pinned": a.get("pinned", False),
             "note": a.get("note") or "",
             "last_activity": format_timestamp(last_ts),
+            "last_activity_ts": last_ts,
         })
     return rows
 
