@@ -41,6 +41,22 @@ uv run server.py
 
 Open `http://localhost:5000`.
 
+## Docker
+
+Build and run with Docker Compose:
+
+```bash
+docker compose up -d
+```
+
+This uses a multi-stage build that bundles/minifies frontend assets with
+esbuild, then runs the app with uv in a minimal Python image. To rebuild
+after making changes:
+
+```bash
+docker compose up -d --build
+```
+
 ## Configuration
 
 All settings are optional environment variables (or `.env` entries):

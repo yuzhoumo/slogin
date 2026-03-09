@@ -59,7 +59,7 @@ export function startStream() {
     document.querySelector(".count").textContent = `(${data.total} aliases)`;
     const statsEl = document.querySelector(".stats");
     if (data.nb_forward != null) {
-      statsEl.textContent = `Past 14 days: ${data.nb_forward} Forwarded, ${data.nb_reply} Replies/Sent, ${data.nb_block} Blocked`;
+      statsEl.textContent = `Past 14 days: ${data.nb_forward} Forwarded, ${data.nb_reply} Sent, ${data.nb_block} Blocked`;
     }
     source.close();
 
