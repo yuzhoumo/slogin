@@ -13,14 +13,22 @@ from app.models import AliasRow
 log: logging.Logger = logging.getLogger("slogin")
 
 
-async def fetch_alias_count(client: SimpleLoginClient) -> int:
-    """Use the stats endpoint to determine total alias count."""
+async def fetch_alias_stats(client: SimpleLoginClient) -> dict[str, int]:
+    """Fetch alias count and aggregate activity stats."""
     resp = await client.get("/api/stats")
     resp.raise_for_status()
     data: dict[str, Any] = resp.json()
-    count: int = data.get("nb_alias", 0)
-    log.info("stats: %d aliases total", count)
-    return count
+    stats: dict[str, int] = {
+        "nb_alias": data.get("nb_alias", 0),
+        "nb_forward": data.get("nb_forward", 0),
+        "nb_block": data.get("nb_block", 0),
+        "nb_reply": data.get("nb_reply", 0),
+    }
+    log.info(
+        "stats: %d aliases, %d fwd, %d block, %d reply",
+        stats["nb_alias"], stats["nb_forward"], stats["nb_block"], stats["nb_reply"],
+    )
+    return stats
 
 
 async def fetch_page(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import math
 import time
@@ -17,7 +18,7 @@ from app.client import SimpleLoginClient
 from app.config import ALIASES_PER_PAGE
 from app.ratelimiter import WaitCallback
 from app.services import (
-    fetch_alias_count,
+    fetch_alias_stats,
     fetch_page,
     format_rows,
 )
@@ -67,8 +68,8 @@ async def aliases_stream(request: Request) -> StreamingResponse:
             await event_queue.put(("page_ready", (pid, batch)))
 
         # Phase 1: stats + pages 0-8
-        stats_task: asyncio.Task[int] = asyncio.create_task(
-            fetch_alias_count(client)
+        stats_task: asyncio.Task[dict[str, int]] = asyncio.create_task(
+            fetch_alias_stats(client)
         )
         for p in range(prefetch_count):
             asyncio.create_task(fetch_and_store(p))
@@ -76,6 +77,7 @@ async def aliases_stream(request: Request) -> StreamingResponse:
         next_page: int = 0
         total_sent: int = 0
         total_pages: int | None = None
+        stats: dict[str, int] | None = None
 
         while True:
             try:
@@ -106,7 +108,8 @@ async def aliases_stream(request: Request) -> StreamingResponse:
 
             # Determine total pages once stats returns
             if total_pages is None and stats_task.done():
-                nb_alias: int = stats_task.result()
+                stats = stats_task.result()
+                nb_alias: int = stats["nb_alias"]
                 total_pages = max(1, math.ceil(nb_alias / ALIASES_PER_PAGE))
                 for p in range(prefetch_count, total_pages):
                     asyncio.create_task(fetch_and_store(p))
@@ -159,7 +162,10 @@ async def aliases_stream(request: Request) -> StreamingResponse:
             if total_pages is not None and next_page >= total_pages:
                 break
 
-        yield f"event: done\ndata: {total_sent}\n\n"
+        done_data: dict[str, Any] = {"total": total_sent}
+        if stats:
+            done_data.update(stats)
+        yield f"event: done\ndata: {json.dumps(done_data)}\n\n"
         client.limiter.on_wait = prev_on_wait
         total_ms: float = (time.monotonic() - total_start) * 1000
         log.info("streamed %d aliases in %.0fms", total_sent, total_ms)

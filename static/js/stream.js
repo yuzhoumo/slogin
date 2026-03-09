@@ -55,7 +55,12 @@ export function startStream() {
   });
 
   source.addEventListener("done", (e) => {
-    document.querySelector(".count").textContent = `(${e.data} aliases)`;
+    const data = JSON.parse(e.data);
+    document.querySelector(".count").textContent = `(${data.total} aliases)`;
+    const statsEl = document.querySelector(".stats");
+    if (data.nb_forward != null) {
+      statsEl.textContent = `Past 14 days: ${data.nb_forward} Forwarded, ${data.nb_reply} Replies/Sent, ${data.nb_block} Blocked`;
+    }
     source.close();
 
     // Enable interactive controls now that loading is complete
