@@ -69,6 +69,4 @@ All settings are optional environment variables (or `.env` entries):
 
 The `random` option for alias creation will generate a random 8-character
 alphanumeric prefix for custom domains. For non-custom domains, this option
-will use the alias defaults configured in SimpleLogin:
-
-![alias-options-screenshot](docs/alias-options.png)
+will use the alias defaults configured in SimpleLogin.
