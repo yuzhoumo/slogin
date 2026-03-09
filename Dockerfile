@@ -8,7 +8,8 @@ RUN npx --yes esbuild \
     npx --yes esbuild \
       static/js/ufuzzy.js --minify --outfile=dist/js/ufuzzy.js && \
     npx --yes esbuild \
-      static/style.css --bundle --minify --outfile=dist/style.css
+      static/style.css --bundle --minify --outfile=dist/style.css && \
+    cp static/favicon.ico dist/favicon.ico
 
 # production runtime
 FROM python:3.14-slim AS runtime
