@@ -9,9 +9,12 @@
 body {
   background: #1a1a2e;
   color: #e0e0e0;
+  display: flex;
+  flex-direction: column;
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 13px;
-  padding: 20px;
+  height: 100dvh;
+  padding: 0 20px;
 }
 
 /* ===== Utility ===== */
@@ -20,8 +23,15 @@ body {
   display: none;
 }
 
+.content-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 @media (max-width: 600px) {
   body {
-    padding: 10px;
+    padding: 0 10px;
   }
 }

@@ -1,5 +1,7 @@
 .search-bar {
-  margin-bottom: 12px;
+  background: #1a1a2e;
+  flex-shrink: 0;
+  padding-bottom: 12px;
 }
 
 #search-input {

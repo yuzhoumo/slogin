@@ -1,17 +1,13 @@
-.table-scroll {
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
 table {
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   min-width: 960px;
   table-layout: fixed;
   width: 100%;
 }
 
 th {
+  background: #1a1a2e;
   border-bottom: 1px solid #333;
   color: #777;
   cursor: pointer;
@@ -19,9 +15,12 @@ th {
   font-weight: 500;
   letter-spacing: 0.5px;
   padding: 4px 8px;
+  position: sticky;
   text-align: left;
   text-transform: uppercase;
+  top: 0;
   user-select: none;
+  z-index: 2;
 }
 
 th:hover {
