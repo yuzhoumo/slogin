@@ -1,6 +1,6 @@
 # slogin
 
-A lightweight, opinionated web client for [SimpleLogin](https://simplelogin.io).
+A super lightweight, opinionated web client for [SimpleLogin](https://simplelogin.io).
 Optimized for compact visibility and quick alias management.
 
 > Note: This project is designed to run either locally or on private networks.
@@ -8,13 +8,14 @@ Optimized for compact visibility and quick alias management.
 
 ## Features
 
-- Single-page view of all aliases with SSE streaming
+- Tiny. No bulky JS frameworks. ([< 14KB](https://endtimes.dev/why-your-website-should-be-under-14kb-in-size/))
+- Single-page view of all aliases, concurrently fetched with SSE streaming
+- Rate-limited API proxy to stay within SimpleLogin limits
 - Fuzzy search across emails and descriptions
 - Sortable columns (status, alias, description, last activity, created)
 - Inline note editing, pin/unpin, enable/disable, delete
-- Alias creation with custom prefix, domain selection, and random mode
+- Alias creation with custom prefix, domain selection, and random generation
 - Click-to-copy email addresses
-- Rate-limited API proxy to stay within SimpleLogin limits
 
 ## Setup
 

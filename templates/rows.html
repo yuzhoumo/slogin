@@ -27,7 +27,7 @@
     </span>
   </td>
   <td class="ts" data-ts="{{ a.last_activity_ts or '' }}" data-tooltip="{% if a.last_activity_contact %}Last: {{ a.last_activity_contact }}
-Past 14 days: {{ a.nb_forward }} forwarded, {{ a.nb_block }} blocked, {{ a.nb_reply }} sent{% else %}No emails received/sent in the last 14 days{% endif %}">{{ a.last_activity }}</td>
+    14 days: {{ a.nb_forward }} forwarded, {{ a.nb_block }} blocked, {{ a.nb_reply }} sent{% else %}No emails in the last 14 days{% endif %}">{{ a.last_activity }}</td>
   <td class="ts" data-ts="{{ a.creation_ts or '' }}">{{ a.creation_date }}</td>
   <td class="actions">
     <button class="delete-btn pin-disabled" onclick="deleteAlias(this, {{ a.id }})" title="Delete">

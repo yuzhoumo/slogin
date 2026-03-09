@@ -1,38 +1,4 @@
-/**
- * @typedef {Object} FuseItem
- * @property {string} email
- * @property {string} note
- * @property {HTMLTableRowElement} row
- */
-
-/** @type {Fuse | null} */
-let fuseInstance = null;
-
-/**
- * Builds (or rebuilds) the Fuse.js search index from current table rows.
- * @returns {FuseItem[]}
- */
-function buildFuseIndex() {
-  const allRows = [...document.querySelectorAll("#pinned-body tr, #alias-body tr")];
-
-  /** @type {FuseItem[]} */
-  const items = allRows.map((row) => ({
-    email: row.querySelector("td.email")?.textContent.trim() ?? "",
-    note:
-      row.querySelector("td.note")?.getAttribute("data-note") ??
-      row.querySelector("td.note")?.textContent.trim() ??
-      "",
-    row: /** @type {HTMLTableRowElement} */ (row),
-  }));
-
-  fuseInstance = new Fuse(items, {
-    keys: ["email", "note"],
-    threshold: 0.4,
-    ignoreLocation: true,
-  });
-
-  return items;
-}
+const uf = new uFuzzy({ intraIns: 1 });
 
 /**
  * Filters visible alias rows using fuzzy matching.
@@ -51,12 +17,21 @@ export function fuzzyFilter(query) {
     return;
   }
 
-  buildFuseIndex();
-  const results = fuseInstance.search(query);
-  const matchedRows = new Set(results.map((r) => r.item.row));
+  // build haystack combining email + note for each row
+  const haystack = allRows.map((row) => {
+    const email = row.querySelector("td.email")?.textContent.trim() ?? "";
+    const note =
+      row.querySelector("td.note")?.getAttribute("data-note") ??
+      row.querySelector("td.note")?.textContent.trim() ??
+      "";
+    return email + " " + note;
+  });
 
-  for (const row of allRows) {
-    row.style.display = matchedRows.has(row) ? "" : "none";
+  const [idxs] = uf.search(haystack, query);
+  const matchedIdxs = new Set(idxs ?? []);
+
+  for (let i = 0; i < allRows.length; i++) {
+    allRows[i].style.display = matchedIdxs.has(i) ? "" : "none";
   }
 
   const hasVisiblePinned = [...pinnedBody.children].some(
@@ -70,5 +45,4 @@ export function fuzzyFilter(query) {
  */
 export function resetSearch() {
   document.getElementById("search-input").value = "";
-  fuseInstance = null;
 }

@@ -6,6 +6,8 @@ COPY static/ static/
 RUN npx --yes esbuild \
       static/js/main.js --bundle --minify --format=iife --outfile=dist/js/main.js && \
     npx --yes esbuild \
+      static/js/ufuzzy.js --minify --outfile=dist/js/ufuzzy.js && \
+    npx --yes esbuild \
       static/style.css --bundle --minify --outfile=dist/style.css
 
 # production runtime
