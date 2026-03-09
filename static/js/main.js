@@ -6,6 +6,7 @@ import { sortTable } from "./sort.js";
 import { createAlias, initCreateListeners } from "./create.js";
 import { startStream } from "./stream.js";
 import { initTimezoneHeaders } from "./timestamp.js";
+import { initTooltips } from "./tooltip.js";
 
 // Expose functions to global scope for inline onclick handlers
 Object.assign(window, {
@@ -26,4 +27,5 @@ Object.assign(window, {
 initTimezoneHeaders();
 initNoteListeners();
 initCreateListeners();
+initTooltips();
 startStream();

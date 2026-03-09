@@ -46,12 +46,59 @@ h1 {
   border: 1px solid #444;
   color: #aaa;
   cursor: pointer;
+  flex-shrink: 0;
   font-family: inherit;
   font-size: 12px;
   padding: 4px 12px;
+  white-space: nowrap;
 }
 
 .refresh:hover {
   border-color: #888;
   color: #ddd;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 900px) {
+  header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .stats {
+    display: block;
+  }
+
+  .header-right {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .create-bar {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .create-input-group {
+    width: 100%;
+  }
+
+  .create-input {
+    flex: 1;
+    width: auto;
+  }
+
+  .create-select {
+    width: 100%;
+  }
+
+  .create-btn {
+    width: 100%;
+  }
+
+  .refresh {
+    width: 100%;
+  }
 }

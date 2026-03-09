@@ -1,5 +1,12 @@
+.table-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
 table {
   border-collapse: collapse;
+  min-width: 960px;
   table-layout: fixed;
   width: 100%;
 }
@@ -34,9 +41,8 @@ td {
   white-space: nowrap;
 }
 
-td[data-tooltip],
-td:has([data-tooltip]) {
-  overflow: visible;
+tr {
+  position: relative;
 }
 
 tr:hover td {

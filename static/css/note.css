@@ -1,6 +1,6 @@
 td.note {
   color: #999;
-  max-width: 300px;
+  overflow: visible;
   position: relative;
   white-space: normal;
 }

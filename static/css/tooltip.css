@@ -1,29 +1,21 @@
-[data-tooltip] {
-  position: relative;
-}
-
-[data-tooltip]::after {
+.tooltip {
   background: #1e1e36;
   border-radius: 4px;
   border: 1px solid #444;
   color: #ccc;
-  content: attr(data-tooltip);
   font-size: 12px;
-  left: 50%;
   line-height: 1.5;
+  max-width: 320px;
   opacity: 0;
   padding: 6px 10px;
   pointer-events: none;
-  position: absolute;
-  top: 100%;
-  transform: translateX(-50%) translateY(4px);
+  position: fixed;
   transition: opacity 0.12s;
   white-space: pre-line;
   width: max-content;
-  max-width: 320px;
-  z-index: 100;
+  z-index: 1000;
 }
 
-[data-tooltip]:hover::after {
+.tooltip.visible {
   opacity: 1;
 }

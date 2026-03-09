@@ -32,11 +32,12 @@
     <input type="text" id="search-input" placeholder="Search aliases…" oninput="fuzzyFilter(this.value)">
   </div>
   <div id="pinned-section" class="pinned-section hidden">
+    <div class="table-scroll">
     <table id="pinned-table">
       <colgroup>
         <col style="width: 80px;">
         <col style="width: 35%;">
-        <col>
+        <col style="width: 200px;">
         <col style="width: 170px;">
         <col style="width: 170px;">
         <col style="width: 40px;">
@@ -53,12 +54,14 @@
       </thead>
       <tbody id="pinned-body"></tbody>
     </table>
+    </div>
   </div>
+  <div class="table-scroll">
   <table id="main-table">
     <colgroup>
       <col style="width: 80px;">
       <col style="width: 35%;">
-      <col>
+      <col style="width: 200px;">
       <col style="width: 170px;">
       <col style="width: 170px;">
       <col style="width: 40px;">
@@ -83,5 +86,6 @@
       </tr>
     </tbody>
   </table>
+  </div>
 </body>
 </html>
