@@ -19,7 +19,17 @@ Optimized for compact visibility and quick alias management.
 
 ## Setup
 
-Requires [uv](https://docs.astral.sh/uv/) and Python >= 3.14.
+Create a `.env` file with your
+[SimpleLogin API key](https://app.simplelogin.io/dashboard/enter_sudo?next=%2Fdashboard%2Fapi_key):
+
+| Variable                  | Default                      | Description         |
+|---------------------------|------------------------------|---------------------|
+| `SLOGIN_API_KEY`          | *(required)*                 | SimpleLogin API key |
+| `SLOGIN_API_BASE`         | `https://app.simplelogin.io` | API base URL        |
+
+## Usage
+
+Install [uv](https://docs.astral.sh/uv/) and Python >= 3.14.
 
 ```bash
 git clone https://github.com/yuzhoumo/slogin.git
@@ -27,20 +37,15 @@ cd slogin
 uv sync
 ```
 
-Create a `.env` file with your
-[SimpleLogin API key](https://app.simplelogin.io/dashboard/enter_sudo?next=%2Fdashboard%2Fapi_key):
-
-```
-SLOGIN_API_KEY=your_api_key_here
-```
-
-## Usage
-
 ```bash
 uv run server.py
 ```
 
 Open `http://localhost:5000`.
+
+Note: The `random` option on the webpage for alias creation will generate a
+random 8-character alphanumeric prefix for custom domains. For non-custom
+domains, this option will use the alias defaults configured in SimpleLogin.
 
 ## Docker
 
@@ -57,16 +62,3 @@ after making changes:
 ```bash
 docker compose up -d --build
 ```
-
-## Configuration
-
-All settings are optional environment variables (or `.env` entries):
-
-| Variable                  | Default                      | Description         |
-|---------------------------|------------------------------|---------------------|
-| `SLOGIN_API_KEY`          | *(required)*                 | SimpleLogin API key |
-| `SLOGIN_API_BASE`         | `https://app.simplelogin.io` | API base URL        |
-
-The `random` option for alias creation will generate a random 8-character
-alphanumeric prefix for custom domains. For non-custom domains, this option
-will use the alias defaults configured in SimpleLogin.
