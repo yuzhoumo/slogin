@@ -1,7 +1,9 @@
 # slogin
 
-A super lightweight, opinionated web client for [SimpleLogin](https://simplelogin.io).
-Optimized for compact visibility and quick alias management.
+A super lightweight web client for [SimpleLogin](https://simplelogin.io).
+Optimized for compact visibility and quick management.
+
+![demo-screenshot](doc/screenshot.png)
 
 > Note: This project is designed to run either locally or on private networks.
 > DO NOT expose this publicly, since there is no built-in authentication.
