@@ -1,3 +1,5 @@
+import uFuzzy from "./ufuzzy.js";
+
 const uf = new uFuzzy({ intraIns: 1 });
 
 /**

@@ -1049,3 +1049,5 @@ var uFuzzy = (function () {
 	return uFuzzy;
 
 })();
+
+export default uFuzzy;
