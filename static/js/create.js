@@ -1,5 +1,5 @@
 import { showToast } from "./toast.js";
-import { startStream } from "./stream.js";
+import { localizeTimestamps } from "./timestamp.js";
 
 /**
  * @typedef {Object} AliasSuffix
@@ -176,7 +176,32 @@ export async function createAlias() {
     /** @type {HTMLInputElement} */ (
       document.getElementById("create-prefix")
     ).value = "";
-    startStream();
+
+    if (data.row_html) {
+      const temp = document.createElement("tbody");
+      temp.innerHTML = data.row_html;
+      const newRow = /** @type {HTMLTableRowElement} */ (temp.firstElementChild);
+
+      // Enable interactive controls on the new row
+      for (const el of newRow.querySelectorAll(".toggle.disabled"))
+        el.classList.remove("disabled");
+      for (const el of newRow.querySelectorAll("td.note-disabled"))
+        el.classList.remove("note-disabled");
+      for (const el of newRow.querySelectorAll(".pin-btn.pin-disabled"))
+        el.classList.remove("pin-disabled");
+      for (const el of newRow.querySelectorAll(".delete-btn.pin-disabled"))
+        el.classList.remove("pin-disabled");
+
+      const aliasBody = document.getElementById("alias-body");
+      aliasBody.prepend(newRow);
+      localizeTimestamps(aliasBody);
+
+      const countEl = document.querySelector(".count");
+      const match = countEl.textContent.match(/\d+/);
+      if (match) {
+        countEl.textContent = `(${parseInt(match[0]) + 1} aliases)`;
+      }
+    }
   } catch (err) {
     showToast(`Failed to create alias: ${err.message}`, "error");
   } finally {

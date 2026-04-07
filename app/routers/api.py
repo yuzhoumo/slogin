@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from app.client import SimpleLoginClient
 from app.models import AliasCreate, NoteUpdate, PinUpdate
+from app.services import render_alias_row
 
 log: logging.Logger = logging.getLogger("slogin")
 router: APIRouter = APIRouter(prefix="/api")
@@ -117,4 +118,7 @@ async def create_alias(body: AliasCreate, request: Request) -> JSONResponse:
             json_body["note"] = body.note
         resp = await client.post("/api/v3/alias/custom/new", json_body=json_body)
 
-    return JSONResponse(resp.json(), status_code=resp.status_code)
+    data: dict[str, Any] = resp.json()
+    if resp.status_code < 400:
+        data["row_html"] = render_alias_row(data)
+    return JSONResponse(data, status_code=resp.status_code)

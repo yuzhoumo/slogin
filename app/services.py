@@ -7,10 +7,13 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+from jinja2 import Environment, FileSystemLoader
+
 from app.client import SimpleLoginClient
 from app.models import AliasRow
 
 log: logging.Logger = logging.getLogger("slogin")
+_jinja_env: Environment = Environment(loader=FileSystemLoader("templates"))
 
 
 async def fetch_alias_stats(client: SimpleLoginClient) -> dict[str, int]:
@@ -90,3 +93,13 @@ def format_rows(aliases: list[dict[str, Any]]) -> list[AliasRow]:
             )
         )
     return rows
+
+
+def render_alias_row(alias_data: dict[str, Any]) -> str:
+    """Render a single alias dict as an HTML table row."""
+    rows = format_rows([alias_data])
+    if not rows:
+        return ""
+    return _jinja_env.get_template("rows.html").render(
+        aliases=[rows[0].model_dump()]
+    )
