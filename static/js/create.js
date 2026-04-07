@@ -17,6 +17,19 @@ import { startStream } from "./stream.js";
 /** @type {AliasOptions | null} */
 let aliasOptions = null;
 
+/** Timestamp (ms) when alias options were last fetched. */
+let aliasOptionsLoadedAt = 0;
+
+/** Signed suffixes expire server-side after 600s; refresh well before that. */
+const SUFFIX_MAX_AGE_MS = 5 * 60 * 1000;
+
+/**
+ * Returns true if the cached alias options are stale and need refreshing.
+ */
+function areSuffixesExpired() {
+  return !aliasOptions || Date.now() - aliasOptionsLoadedAt > SUFFIX_MAX_AGE_MS;
+}
+
 /**
  * Fetches alias creation options (suffixes, mailbox) from the API.
  */
@@ -26,6 +39,7 @@ export async function loadAliasOptions() {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
     aliasOptions = await resp.json();
+    aliasOptionsLoadedAt = Date.now();
 
     const select = /** @type {HTMLSelectElement} */ (
       document.getElementById("create-domain")
@@ -93,6 +107,7 @@ function syncPrefixState() {
  * Creates a new alias via the API using the current form inputs.
  */
 export async function createAlias() {
+  if (areSuffixesExpired()) await loadAliasOptions();
   if (!aliasOptions) return;
 
   const prefix = /** @type {HTMLInputElement} */ (
